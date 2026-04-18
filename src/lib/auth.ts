@@ -4,20 +4,31 @@ import Apple from 'next-auth/providers/apple';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from './prisma';
 
+const providers = [];
+
+if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
+  providers.push(
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+    }),
+  );
+}
+
+if (process.env.AUTH_APPLE_ID && process.env.AUTH_APPLE_SECRET) {
+  providers.push(
+    Apple({
+      clientId: process.env.AUTH_APPLE_ID,
+      clientSecret: process.env.AUTH_APPLE_SECRET,
+    }),
+  );
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
   trustHost: true,
-  providers: [
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID || '',
-      clientSecret: process.env.AUTH_GOOGLE_SECRET || '',
-    }),
-    Apple({
-      clientId: process.env.AUTH_APPLE_ID || '',
-      clientSecret: process.env.AUTH_APPLE_SECRET || '',
-    }),
-  ],
-  secret: process.env.NEXTAUTH_SECRET,
+  providers,
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: '/login',
   },
