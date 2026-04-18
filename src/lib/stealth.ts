@@ -17,9 +17,8 @@ function bytesToHex(bytes: Uint8Array): string {
 }
 
 function base58Encode(buffer: Buffer | Uint8Array): string {
-  const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-  let result = '';
-  let bytes = buffer instanceof Uint8Array ? Buffer.from(buffer) : buffer;
+  const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnopqrstuvwxyz';
+  let bytes: number[] = Array.from(buffer instanceof Uint8Array ? Buffer.from(buffer) : buffer);
 
   let leadingZeros = 0;
   for (let i = 0; i < bytes.length && bytes[i] === 0; i++) {
@@ -36,7 +35,7 @@ function base58Encode(buffer: Buffer | Uint8Array): string {
     }
     base58Chars.push(alphabet[carry]);
     while (bytes.length > 0 && bytes[bytes.length - 1] === 0) {
-      bytes.length--;
+      bytes.pop();
     }
   }
 
