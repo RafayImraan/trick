@@ -25,9 +25,15 @@ export async function POST(request: Request) {
       },
     });
 
+    const currentKey = await prisma.stealthKey.findUnique({
+      where: { id: link.stealthKeyId },
+    });
+
+    const newBalance = (parseFloat(currentKey?.balance || '0') + parseFloat(amount)).toString();
+
     await prisma.stealthKey.update({
       where: { id: link.stealthKeyId },
-      data: { balance: { increment: amount } },
+      data: { balance: newBalance },
     });
 
     return NextResponse.json({ success: true });
