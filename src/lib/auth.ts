@@ -11,13 +11,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Google({
       clientId: process.env.AUTH_GOOGLE_ID || '',
       clientSecret: process.env.AUTH_GOOGLE_SECRET || '',
-      authorization: {
-        params: {
-          prompt: 'consent',
-          access_type: 'offline',
-          response_type: 'code'
-        }
-      }
     }),
     Apple({
       clientId: process.env.AUTH_APPLE_ID || '',
@@ -27,7 +20,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: '/login',
-    error: '/login',
   },
   callbacks: {
     async session({ session, user }: { session: any; user: any }) {
@@ -39,6 +31,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   session: {
     strategy: 'database',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 });
