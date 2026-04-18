@@ -4,15 +4,18 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
-type TronWindow = {
-  tronWeb?: {
-    ready: boolean;
-    defaultAddress: { base58: string };
-    trx: {
-      sendTransaction: (to: string, amount: number) => Promise<{ txid: string }>;
-      getBalance: (address: string) => Promise<number>;
-    };
+type TronWeb = {
+  ready: boolean;
+  defaultAddress: { base58: string };
+  trx: {
+    sendTransaction: (to: string, amount: number) => Promise<{ txid: string }>;
+    getBalance: (address: string) => Promise<number>;
   };
+  requestAccount: () => void;
+};
+
+type TronWindow = {
+  tronWeb?: TronWeb;
 };
 
 declare global {
@@ -39,16 +42,14 @@ export default function PayPage() {
   const checkWallet = async () => {
     setStatus('connecting');
     try {
-      if (typeof window !== 'undefined' && window.tronWeb) {
-        const tron = window.tronWeb;
-        if (tron.tronWeb?.ready) {
-          setWalletConnected(true);
-          const addr = tron.tronWeb.defaultAddress.base58;
-          const bal = await tron.trx.getBalance(addr);
-          setBalance(bal / 1e6);
-          setStatus('idle');
-          return;
-        }
+      const tron = window.tronWeb;
+      if (tron?.ready) {
+        setWalletConnected(true);
+        const addr = tron.defaultAddress.base58;
+        const bal = await tron.trx.getBalance(addr);
+        setBalance(bal / 1e6);
+        setStatus('idle');
+        return;
       }
       setStatus('idle');
     } catch (err) {
@@ -75,7 +76,8 @@ export default function PayPage() {
       return;
     }
 
-    if (!window.tronWeb?.tronWeb?.ready) {
+    const tron = window.tronWeb;
+    if (!tron?.ready) {
       setError('Please connect TronLink wallet');
       return;
     }
@@ -84,7 +86,6 @@ export default function PayPage() {
     setError('');
 
     try {
-      const tron = window.tronWeb;
       const amountSun = Math.floor(parseFloat(amount) * 1e6);
 
       const result = await tron.trx.sendTransaction(receiverAddress, amountSun);
@@ -110,9 +111,9 @@ export default function PayPage() {
   };
 
   const connectWallet = () => {
-    if (typeof window !== 'undefined' && window.tronWeb) {
-      window.tronWeb.tronWeb.requestAccount();
-      checkWallet();
+    if (window.tronWeb) {
+      window.tronWeb.requestAccount();
+      setTimeout(checkWallet, 1000);
     } else {
       setError('Please install TronLink Wallet');
     }
