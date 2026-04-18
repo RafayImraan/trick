@@ -55,17 +55,22 @@ function ripemd160(data: Buffer): Buffer {
   return crypto.createHash('ripemd160').update(data).digest();
 }
 
+function buf2hex(buffer: Buffer): string {
+  return Array.from(buffer)
+    .map(x => x.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 export function tronAddressFromPrivateKey(privateKeyHex: string): string {
-  const privateKey = hexToBytes(privateKeyHex);
-
-  const publicKey = crypto.createPublicKey({
-    key: crypto.createPrivateKey({ key: privateKey, curve: CURVE }),
-    format: 'der',
-    type: 'spki',
-  });
-
-  const publicKeyBytes = publicKey.export({ format: 'der' }).slice(2);
-
+  const privateKeyBytes = hexToBytes(privateKeyHex);
+  
+  const ecdh = crypto.createECDH(CURVE);
+  ecdh.setPrivateKey(Buffer.from(privateKeyBytes));
+  const publicKey = ecdh.getPublicKey();
+  
+  const publicKeyHex = buf2hex(publicKey);
+  const publicKeyBytes = hexToBytes(publicKeyHex);
+  
   const hash = sha256sha256(Buffer.from(publicKeyBytes));
   const addressBytes = new Uint8Array(21);
   addressBytes[0] = 0x41;
@@ -105,15 +110,11 @@ export function generateStealthAddress(
   const hash = sha256sha256(Buffer.from(sharedSecret));
   const derivedKey = hash.slice(0, 32);
 
-  const ecdh2 = crypto.createECDH(CURVE);
-  ecdh2.setPrivateKey(derivedKey);
-  const derivedPublic = ecdh2.getPublicKey();
-
   const address = tronAddressFromPrivateKey(bytesToHex(derivedKey));
 
   return {
     stealthAddress: address,
-    viewKey: bytesToHex(derivedPublic),
+    viewKey: '',
     blindingFactor: bf,
   };
 }
