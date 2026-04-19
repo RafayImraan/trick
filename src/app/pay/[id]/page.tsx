@@ -33,10 +33,15 @@ export default function PayPage() {
   const [receiverAddress, setReceiverAddress] = useState('');
 
   const linkId = params.id as string;
+  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const urlAmount = searchParams.get('amount');
 
   useEffect(() => {
     checkWallet();
     fetchReceiver();
+    if (urlAmount) {
+      setAmount(urlAmount);
+    }
   }, []);
 
   const checkWallet = async () => {

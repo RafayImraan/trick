@@ -541,6 +541,25 @@ pre,
   font-size: 0.84rem;
 }
 
+.link-item {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 247, 245, 0.9);
+  border: 1px solid rgba(255, 67, 54, 0.08);
+  margin-bottom: 12px;
+}
+
+.link-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btn-sm {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
 .pill {
   display: inline-flex;
   align-items: center;

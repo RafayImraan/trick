@@ -28,8 +28,9 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { generateRandomKey, tronAddressFromPrivateKey } = await import('@/lib/stealth');
-    const { privateKey, address } = generateRandomKey();
+    const { createRandomPrivateKey, fromPrivateKeyToAddress } = await import('@/lib/tron');
+    const privateKey = createRandomPrivateKey();
+    const address = fromPrivateKeyToAddress(privateKey);
 
     const key = await prisma.stealthKey.create({
       data: {

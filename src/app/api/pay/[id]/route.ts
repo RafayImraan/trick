@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createRandomPrivateKey, fromPrivateKeyToAddress } from '@/lib/tron';
 
 export async function GET(
   request: Request,
@@ -22,9 +23,37 @@ export async function GET(
       data: { clickCount: { increment: 1 } },
     });
 
-    const address = link.stealthKey?.address || '';
+    let stealthKey = link.stealthKey;
+    let address = stealthKey?.address;
 
-    return NextResponse.json({ address });
+    if (!stealthKey) {
+      const privateKey = createRandomPrivateKey();
+      const newAddress = fromPrivateKeyToAddress(privateKey);
+
+      stealthKey = await prisma.stealthKey.create({
+        data: {
+          userId: link.userId,
+          publicKey: '',
+          privateKey,
+          address: newAddress,
+          balance: '0',
+          isActive: true,
+        },
+      });
+
+      await prisma.paymentLink.update({
+        where: { id: link.id },
+        data: { stealthKeyId: stealthKey.id },
+      });
+
+      address = newAddress;
+    }
+
+    return NextResponse.json({
+      address,
+      linkId: id,
+      keyId: stealthKey?.id,
+    });
   } catch (error) {
     console.error('Error resolving link:', error);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
