@@ -85,54 +85,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token;
     },
     async signIn({ user, account, profile }) {
-      try {
-        if (account?.provider === 'google' || account?.provider === 'apple') {
-          const existingAccount = await prisma.account.findFirst({
-            where: {
-              provider: account.provider,
-              providerAccountId: account.providerAccountId,
-            },
-          });
-          if (existingAccount) {
-            return true;
-          }
-          
-          const email = profile?.email;
-          if (!email) {
-            return true;
-          }
-          
-          let existingUser = await prisma.user.findFirst({
-            where: { email },
-          });
-          
-          if (!existingUser && user) {
-            existingUser = await prisma.user.findFirst({
-              where: { id: user.id },
-            });
-          }
-          
-          if (existingUser) {
-            await prisma.account.create({
-              data: {
-                userId: existingUser.id,
-                type: account.type || 'oauth',
-                provider: account.provider,
-                providerAccountId: account.providerAccountId,
-                refresh_token: account.refresh_token as string | undefined,
-                access_token: account.access_token as string | undefined,
-                expires_at: account.expires_at ?? undefined,
-                token_type: account.token_type ?? undefined,
-                scope: account.scope ?? undefined,
-                id_token: account.id_token as string | undefined,
-                session_state: account.session_state as string | undefined,
-              },
-            });
-          }
-        }
-      } catch (error) {
-        console.error('SignIn callback error:', error);
-      }
       return true;
     },
   },
