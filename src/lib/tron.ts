@@ -1,8 +1,8 @@
 import crypto from 'crypto';
 
-const FULL_NODE = process.env.TRON_FULL_NODE || 'https://api.shasta.trongrid.io';
-const SOLIDITY_NODE = process.env.TRON_SOLIDITY_NODE || 'https://api.shasta.trongrid.io';
-const EVENT_SERVER = process.env.TRON_EVENT_SERVER || 'https://api.shasta.trongrid.io';
+const FULL_NODE = process.env.TRON_FULL_NODE || 'https://api.nile.org';
+const SOLIDITY_NODE = process.env.TRON_SOLIDITY_NODE || 'https://api.nile.org';
+const EVENT_SERVER = process.env.TRON_EVENT_SERVER || 'https://api.nile.org';
 
 export const TRON_API_KEY = process.env.TRON_API_KEY;
 export const VAULT_CONTRACT_ADDRESS = process.env.VAULT_CONTRACT_ADDRESS || '';
