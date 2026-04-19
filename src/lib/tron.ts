@@ -5,7 +5,8 @@ const FULL_NODE = process.env.TRON_FULL_NODE || 'https://api.trongrid.io';
 const SOLIDITY_NODE = process.env.TRON_SOLIDITY_NODE || 'https://api.trongrid.io';
 const EVENT_SERVER = process.env.TRON_EVENT_SERVER || 'https://api.trongrid.io';
 
-export const tronWeb = new TronWeb(
+const TronWebClass = TronWeb as any;
+export const tronWeb = new TronWebClass(
   FULL_NODE,
   SOLIDITY_NODE,
   EVENT_SERVER
