@@ -1,16 +1,8 @@
-import TronWeb from 'tronweb';
 import crypto from 'crypto';
 
 const FULL_NODE = process.env.TRON_FULL_NODE || 'https://api.trongrid.io';
 const SOLIDITY_NODE = process.env.TRON_SOLIDITY_NODE || 'https://api.trongrid.io';
 const EVENT_SERVER = process.env.TRON_EVENT_SERVER || 'https://api.trongrid.io';
-
-const TronWebClass = TronWeb as any;
-export const tronWeb = new TronWebClass(
-  FULL_NODE,
-  SOLIDITY_NODE,
-  EVENT_SERVER
-);
 
 export const TRON_API_KEY = process.env.TRON_API_KEY;
 export const VAULT_CONTRACT_ADDRESS = process.env.VAULT_CONTRACT_ADDRESS || '';
@@ -18,6 +10,41 @@ export const TOKEN_VAULT_CONTRACT_ADDRESS = process.env.TOKEN_VAULT_CONTRACT_ADD
 
 export const TRX_TOKEN = 'TRX';
 export const USDT_TOKEN = 'TR7NHqjeKQxGTCi8qZLJEoU4y3E2sQ3q6M';
+
+let tronWebInstance: any = null;
+
+function getTronWeb() {
+  if (!tronWebInstance) {
+    const TronWeb = require('tronweb');
+    const TronWebClass = TronWeb.default || TronWeb;
+    tronWebInstance = new TronWebClass(
+      FULL_NODE,
+      SOLIDITY_NODE,
+      EVENT_SERVER
+    );
+  }
+  return tronWebInstance;
+}
+
+export const tronWeb = {
+  get trx() {
+    return getTronWeb().trx;
+  },
+  contract() {
+    return getTronWeb().contract();
+  },
+  isAddress(address: string): boolean {
+    return getTronWeb().isAddress(address);
+  },
+  address: {
+    fromPrivateKey(privateKey: string): string {
+      return getTronWeb().address.fromPrivateKey(privateKey);
+    },
+  },
+  setPrivateKey(privateKey: string) {
+    return getTronWeb().setPrivateKey(privateKey);
+  },
+};
 
 export async function getWalletBalance(address: string): Promise<number> {
   try {
@@ -31,6 +58,7 @@ export async function getWalletBalance(address: string): Promise<number> {
 
 export async function getTokenBalance(address: string, tokenAddress: string): Promise<number> {
   try {
+    const tronWeb = getTronWeb();
     const contract = await tronWeb.contract().at(tokenAddress);
     const balance = await contract.balanceOf(address).call();
     return parseFloat(balance.toString()) / 1e6;
@@ -46,6 +74,7 @@ export async function sendTRX(
   amount: number
 ): Promise<{ success: boolean; txid?: string; error?: string }> {
   try {
+    const tronWeb = getTronWeb();
     tronWeb.setPrivateKey(fromPrivateKey);
     const amountSun = Math.floor(amount * 1e6);
     const result = await tronWeb.trx.sendTransaction(toAddress, amountSun);
@@ -63,6 +92,7 @@ export async function sendToken(
   tokenAddress: string
 ): Promise<{ success: boolean; txid?: string; error?: string }> {
   try {
+    const tronWeb = getTronWeb();
     tronWeb.setPrivateKey(fromPrivateKey);
     const contract = await tronWeb.contract().at(tokenAddress);
     const amountSun = Math.floor(amount * 1e6);
@@ -135,6 +165,7 @@ export async function depositToVault(
   }
 
   try {
+    const tronWeb = getTronWeb();
     tronWeb.setPrivateKey(privateKey);
     const amountSun = Math.floor(amount * 1e6);
     const contract = await tronWeb.contract().at(VAULT_CONTRACT_ADDRESS);
@@ -156,6 +187,7 @@ export async function withdrawFromVault(
   }
 
   try {
+    const tronWeb = getTronWeb();
     tronWeb.setPrivateKey(ownerPrivateKey);
     const amountSun = Math.floor(amount * 1e6);
     const contract = await tronWeb.contract().at(VAULT_CONTRACT_ADDRESS);
