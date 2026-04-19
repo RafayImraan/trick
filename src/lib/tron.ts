@@ -1,4 +1,5 @@
-const TronWeb = require('tronweb').default;
+import TronWeb from 'tronweb';
+import crypto from 'crypto';
 
 const FULL_NODE = process.env.TRON_FULL_NODE || 'https://api.trongrid.io';
 const SOLIDITY_NODE = process.env.TRON_SOLIDITY_NODE || 'https://api.trongrid.io';
@@ -15,7 +16,7 @@ export const VAULT_CONTRACT_ADDRESS = process.env.VAULT_CONTRACT_ADDRESS || '';
 export const TOKEN_VAULT_CONTRACT_ADDRESS = process.env.TOKEN_VAULT_CONTRACT_ADDRESS || '';
 
 export const TRX_TOKEN = 'TRX';
-export const USDT_TOKEN = 'TR7NHqjeKQxGTCi8qZLJEoU4y3E2sQ3q6M'; 
+export const USDT_TOKEN = 'TR7NHqjeKQxGTCi8qZLJEoU4y3E2sQ3q6M';
 
 export async function getWalletBalance(address: string): Promise<number> {
   try {
@@ -117,7 +118,6 @@ export function fromPrivateKeyToAddress(privateKey: string): string {
 }
 
 export function createRandomPrivateKey(): string {
-  const crypto = require('crypto');
   let privateKey = '';
   while (!privateKey || privateKey.length !== 64) {
     privateKey = crypto.randomBytes(32).toString('hex');
