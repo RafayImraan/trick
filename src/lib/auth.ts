@@ -7,11 +7,12 @@ import { prisma } from './prisma';
 
 const providers = [];
 
-if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
+if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET && process.env.AUTH_GOOGLE_ID !== '') {
   providers.push(
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
+      allowDangerousAccountLinking: true,
     }),
   );
 }
