@@ -102,16 +102,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           await prisma.account.create({
             data: {
               userId: existingUser.id,
-              type: account.type,
+              type: account.type || 'oauth',
               provider: account.provider,
               providerAccountId: account.providerAccountId,
-              refresh_token: account.refresh_token,
-              access_token: account.access_token,
-              expires_at: account.expires_at,
-              token_type: account.token_type,
-              scope: account.scope,
-              id_token: account.id_token,
-              session_state: account.session_state,
+              refresh_token: account.refresh_token as string | undefined,
+              access_token: account.access_token as string | undefined,
+              expires_at: account.expires_at ?? undefined,
+              token_type: account.token_type ?? undefined,
+              scope: account.scope ?? undefined,
+              id_token: account.id_token as string | undefined,
+              session_state: account.session_state as string | undefined,
             },
           });
           return true;
