@@ -69,17 +69,55 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: '/login',
   },
   callbacks: {
-    async session({ session, user }: { session: any; user: any }) {
-      if (session.user && user) {
-        session.user.id = user.id;
+    async session({ session, user, token }: { session: any; user: any; token: any }) {
+      if (session.user) {
+        session.user.id = token.id || user?.id;
       }
       return session;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, profile }) {
       if (user) {
         token.id = user.id;
       }
+      if (account?.provider === 'credentials' && profile) {
+        token.walletAddress = profile.walletAddress;
+      }
       return token;
+    },
+    async signIn({ user, account, profile }) {
+      if (account?.provider === 'google' || account?.provider === 'apple') {
+        const existingAccount = await prisma.account.findFirst({
+          where: {
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
+          },
+        });
+        if (existingAccount) {
+          return true;
+        }
+        const existingUser = await prisma.user.findFirst({
+          where: { email: profile?.email },
+        });
+        if (existingUser) {
+          await prisma.account.create({
+            data: {
+              userId: existingUser.id,
+              type: account.type,
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+              refresh_token: account.refresh_token,
+              access_token: account.access_token,
+              expires_at: account.expires_at,
+              token_type: account.token_type,
+              scope: account.scope,
+              id_token: account.id_token,
+              session_state: account.session_state,
+            },
+          });
+          return true;
+        }
+      }
+      return true;
     },
   },
   session: {
