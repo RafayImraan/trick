@@ -5,17 +5,22 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
 type TronWeb = {
-  ready: boolean;
-  defaultAddress: { base58: string };
-  trx: {
-    sendTransaction: (to: string, amount: number) => Promise<{ txid: string }>;
-    getBalance: (address: string) => Promise<number>;
+  ready?: boolean;
+  defaultAddress?: { base58: string } | undefined;
+  trx?: {
+    sendTransaction?: (to: string, amount: number) => Promise<{ txid: string }>;
+    getBalance?: (address: string) => Promise<number>;
+    request?: (options: { method: string }) => Promise<void>;
   };
-  requestAccount: () => void;
+  requestAccount?: () => void;
 };
 
 type TronWindow = {
   tronWeb?: TronWeb;
+  tronLink?: {
+    request?: (options: { method: string }) => Promise<void>;
+    tronWeb?: TronWeb;
+  };
 };
 
 declare global {
@@ -47,8 +52,8 @@ export default function PayPage() {
   const checkWallet = async () => {
     setStatus('connecting');
     try {
-      const tron = window.tronWeb;
-      if (tron?.ready) {
+      const tron = (window.tronWeb || window.tronLink?.tronWeb) as TronWeb | undefined;
+      if (tron?.ready && tron.defaultAddress?.base58 && tron.trx?.getBalance) {
         setWalletConnected(true);
         const addr = tron.defaultAddress.base58;
         const bal = await tron.trx.getBalance(addr);
@@ -81,8 +86,8 @@ export default function PayPage() {
       return;
     }
 
-    const tron = window.tronWeb;
-    if (!tron?.ready) {
+    const tron = (window.tronWeb || window.tronLink?.tronWeb) as TronWeb | undefined;
+    if (!tron?.ready || !tron.defaultAddress?.base58 || !tron.trx?.sendTransaction) {
       setError('Please connect TronLink wallet');
       return;
     }
@@ -115,13 +120,15 @@ export default function PayPage() {
     }
   };
 
-  const connectWallet = () => {
-    if (window.tronWeb) {
-      window.tronWeb.requestAccount();
-      setTimeout(checkWallet, 1000);
+  const connectWallet = async () => {
+    if (window.tronLink?.request) {
+      await window.tronLink.request({ method: 'tron_requestAccounts' });
+    } else if (window.tronWeb?.trx?.request) {
+      await window.tronWeb.trx.request({ method: 'tron_requestAccounts' });
     } else {
       setError('Please install TronLink Wallet');
     }
+    setTimeout(checkWallet, 1000);
   };
 
   if (status === 'success') {
