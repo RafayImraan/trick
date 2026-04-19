@@ -69,18 +69,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: '/login',
   },
   callbacks: {
-    async session({ session, user, token }: { session: any; user: any; token: any }) {
-      if (session.user) {
-        session.user.id = token.id || user?.id;
+    async session({ session, token }: { session: any; token: any }) {
+      if (session.user && token.id) {
+        session.user.id = token.id;
       }
       return session;
     },
-    async jwt({ token, user, account, profile }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-      }
-      if (account?.provider === 'credentials' && profile) {
-        token.walletAddress = profile.walletAddress;
       }
       return token;
     },
@@ -89,6 +86,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
   session: {
-    strategy: 'database',
+    strategy: 'jwt',
   },
 });
