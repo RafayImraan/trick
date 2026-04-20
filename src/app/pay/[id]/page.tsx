@@ -72,9 +72,14 @@ export default function PayPage() {
     try {
       const res = await fetch(`/api/pay/${linkId}`);
       const data = await res.json();
-      console.log('Receiver data:', data);
+      console.log('Receiver API response:', data);
+      console.log('Receiver API status:', res.status);
       if (data.address) {
         setReceiverAddress(data.address);
+        console.log('Setting receiver address:', data.address);
+      } else if (data.error) {
+        console.error('API error:', data.error);
+        setError(data.error);
       }
     } catch (err) {
       console.error('Failed to fetch receiver:', err);
