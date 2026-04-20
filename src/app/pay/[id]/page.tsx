@@ -72,6 +72,7 @@ export default function PayPage() {
     try {
       const res = await fetch(`/api/pay/${linkId}`);
       const data = await res.json();
+      console.log('Receiver data:', data);
       if (data.address) {
         setReceiverAddress(data.address);
       }
@@ -86,11 +87,19 @@ export default function PayPage() {
       return;
     }
 
+    if (!receiverAddress) {
+      setError('No receiver address');
+      return;
+    }
+
     const tron = (window.tronWeb || window.tronLink?.tronWeb) as TronWeb | undefined;
     if (!tron?.ready || !tron.defaultAddress?.base58 || !tron.trx?.sendTransaction) {
       setError('Please connect TronLink wallet');
       return;
     }
+
+    console.log('Sending to address:', receiverAddress);
+    console.log('Amount in sun:', Math.floor(parseFloat(amount) * 1e6));
 
     setStatus('sending');
     setError('');
