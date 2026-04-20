@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createRandomPrivateKey, fromPrivateKeyToAddress } from '@/lib/tron';
+import { createRandomPrivateKey, fromPrivateKeyToAddress, validateAddress, getTronWeb } from '@/lib/tron';
 
 export async function GET(
   request: Request,
@@ -27,8 +27,20 @@ export async function GET(
     let address = stealthKey?.address;
 
     if (!stealthKey) {
+      console.log('Creating new stealth key for link:', id);
+      
       const privateKey = createRandomPrivateKey();
+      console.log('Generated private key:', privateKey.substring(0, 8) + '...');
+      
       const newAddress = fromPrivateKeyToAddress(privateKey);
+      console.log('Generated address:', newAddress);
+      console.log('Address valid:', validateAddress(newAddress));
+      
+      if (!newAddress || !validateAddress(newAddress)) {
+        const tron = getTronWeb();
+        console.log('TronWeb fullNode:', FULL_NODE);
+        return NextResponse.json({ error: 'Failed to generate valid address' }, { status: 500 });
+      }
 
       stealthKey = await prisma.stealthKey.create({
         data: {
