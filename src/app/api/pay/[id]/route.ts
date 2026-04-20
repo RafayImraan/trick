@@ -69,6 +69,6 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error resolving link:', error);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    return NextResponse.json({ error: String(error) }, { status: 500 });
   }
 }
