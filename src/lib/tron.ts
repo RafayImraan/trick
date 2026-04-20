@@ -160,6 +160,20 @@ export function fromPrivateKeyToAddress(privateKey: string): string {
   }
 }
 
+export function createRandomPrivateKey(): string {
+  const tron = getTronWeb();
+  try {
+    return tron.utils.accounts.generateRandomPrivateKey();
+  } catch (e) {
+    console.error('Error generating key with TronWeb:', e);
+    let privateKey = '';
+    while (!privateKey || privateKey.length !== 64) {
+      privateKey = crypto.randomBytes(32).toString('hex');
+    }
+    return privateKey;
+  }
+}
+
 export function getTronWebInstance() {
   return getTronWeb();
 }
