@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createRandomPrivateKey, fromPrivateKeyToAddress, validateAddress, getTronWeb } from '@/lib/tron';
+import { createRandomPrivateKey, fromPrivateKeyToAddress, validateAddress, getTronWebInstance, FULL_NODE } from '@/lib/tron';
 
 export async function GET(
   request: Request,
@@ -37,8 +37,9 @@ export async function GET(
       console.log('Address valid:', validateAddress(newAddress));
       
       if (!newAddress || !validateAddress(newAddress)) {
-        const tron = getTronWeb();
-        console.log('TronWeb fullNode:', FULL_NODE);
+        const tron = getTronWebInstance();
+        console.log('Using TronWeb fullNode:', FULL_NODE);
+        console.log('TronWeb instance:', !!tron);
         return NextResponse.json({ error: 'Failed to generate valid address' }, { status: 500 });
       }
 

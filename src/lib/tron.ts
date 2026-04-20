@@ -151,19 +151,17 @@ export function validateAddress(address: string): boolean {
 export function fromPrivateKeyToAddress(privateKey: string): string {
   const tron = getTronWeb();
   try {
-    return tron.address.fromPrivateKey(privateKey);
+    const address = tron.address.fromPrivateKey(privateKey);
+    console.log('fromPrivateKeyToAddress:', privateKey.substring(0, 8) + '...', '=>', address);
+    return address;
   } catch (e) {
     console.error('Error converting private key to address:', e);
     return '';
   }
 }
 
-export function createRandomPrivateKey(): string {
-  let privateKey = '';
-  while (!privateKey || privateKey.length !== 64) {
-    privateKey = crypto.randomBytes(32).toString('hex');
-  }
-  return privateKey;
+export function getTronWebInstance() {
+  return getTronWeb();
 }
 
 export async function depositToVault(
