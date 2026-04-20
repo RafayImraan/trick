@@ -141,11 +141,21 @@ export async function getTransactions(
 }
 
 export function validateAddress(address: string): boolean {
-  return tronWeb.isAddress(address);
+  const tron = getTronWeb();
+  if (!tron.isAddress(address)) {
+    return false;
+  }
+  return address.startsWith('T');
 }
 
 export function fromPrivateKeyToAddress(privateKey: string): string {
-  return tronWeb.address.fromPrivateKey(privateKey);
+  const tron = getTronWeb();
+  try {
+    return tron.address.fromPrivateKey(privateKey);
+  } catch (e) {
+    console.error('Error converting private key to address:', e);
+    return '';
+  }
 }
 
 export function createRandomPrivateKey(): string {
