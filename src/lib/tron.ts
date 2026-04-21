@@ -15,13 +15,16 @@ let tronWebInstance: any = null;
 
 function getTronWeb() {
   if (!tronWebInstance) {
-    const TronWeb = require('tronweb');
-    const TronWebClass = TronWeb.default || TronWeb;
-    tronWebInstance = new TronWebClass(
-      FULL_NODE,
-      SOLIDITY_NODE,
-      EVENT_SERVER
-    );
+    const TronWebModule = require('tronweb');
+    const TronWebClass = TronWebModule.TronWeb || TronWebModule.default || TronWebModule;
+    const headers = TRON_API_KEY ? { 'TRON-PRO-API-KEY': TRON_API_KEY } : undefined;
+
+    tronWebInstance = new TronWebClass({
+      fullHost: FULL_NODE,
+      solidityNode: SOLIDITY_NODE,
+      eventServer: EVENT_SERVER,
+      headers,
+    });
   }
   return tronWebInstance;
 }
@@ -40,11 +43,39 @@ export const tronWeb = {
     fromPrivateKey(privateKey: string): string {
       return getTronWeb().address.fromPrivateKey(privateKey);
     },
+    fromHex(address: string): string {
+      return getTronWeb().address.fromHex(address);
+    },
   },
   setPrivateKey(privateKey: string) {
     return getTronWeb().setPrivateKey(privateKey);
   },
 };
+
+export function createTronAccount(): {
+  privateKey: string;
+  publicKey: string;
+  address: string;
+} {
+  const tron = getTronWeb();
+
+  try {
+    const account = tron.utils.accounts.generateAccount();
+    return {
+      privateKey: account.privateKey,
+      publicKey: account.publicKey,
+      address: account.address.base58,
+    };
+  } catch (e) {
+    console.error('Error generating account with TronWeb:', e);
+    const privateKey = createRandomPrivateKey();
+    return {
+      privateKey,
+      publicKey: '',
+      address: fromPrivateKeyToAddress(privateKey),
+    };
+  }
+}
 
 export async function getWalletBalance(address: string): Promise<number> {
   try {
@@ -104,21 +135,94 @@ export async function sendToken(
   }
 }
 
-export async function getTransactionInfo(txHash: string): Promise<{
-  hash: string;
-  block_timestamp: number;
-  from: string;
-  to: string;
-  value: number;
-  contract_type: string;
-  status: string;
-} | null> {
+export async function getTransactionInfo(txHash: string): Promise<any | null> {
   try {
     const info = await tronWeb.trx.getTransactionInfo(txHash);
     return info;
   } catch (error) {
     return null;
   }
+}
+
+export async function getTransaction(txHash: string): Promise<any | null> {
+  try {
+    return await tronWeb.trx.getTransaction(txHash);
+  } catch (error) {
+    return null;
+  }
+}
+
+export async function verifyTrxPayment(
+  txHash: string,
+  expected: {
+    toAddress: string;
+    amountSun: number;
+    fromAddress?: string;
+  }
+): Promise<{
+  ok: boolean;
+  status: 'pending' | 'confirmed' | 'failed';
+  blockNumber?: number;
+  fromAddress?: string;
+  toAddress?: string;
+  amountSun?: number;
+  error?: string;
+}> {
+  const tx = await getTransaction(txHash);
+  if (!tx?.raw_data?.contract?.length) {
+    return { ok: false, status: 'pending', error: 'Transaction not found on chain' };
+  }
+
+  const contract = tx.raw_data.contract[0];
+  const value = contract?.parameter?.value;
+
+  if (!value?.to_address || typeof value.amount !== 'number') {
+    return { ok: false, status: 'failed', error: 'Unsupported transaction payload' };
+  }
+
+  const toAddress = tronWeb.address.fromHex(value.to_address);
+  const fromAddress = value.owner_address ? tronWeb.address.fromHex(value.owner_address) : undefined;
+  const amountSun = Number(value.amount);
+
+  if (toAddress !== expected.toAddress) {
+    return { ok: false, status: 'failed', error: 'Transaction recipient mismatch', fromAddress, toAddress, amountSun };
+  }
+
+  if (amountSun !== expected.amountSun) {
+    return { ok: false, status: 'failed', error: 'Transaction amount mismatch', fromAddress, toAddress, amountSun };
+  }
+
+  if (expected.fromAddress && fromAddress && fromAddress !== expected.fromAddress) {
+    return { ok: false, status: 'failed', error: 'Transaction sender mismatch', fromAddress, toAddress, amountSun };
+  }
+
+  const info = await getTransactionInfo(txHash);
+  const receiptResult = info?.receipt?.result;
+
+  if (!info || !receiptResult) {
+    return { ok: true, status: 'pending', fromAddress, toAddress, amountSun };
+  }
+
+  if (receiptResult !== 'SUCCESS') {
+    return {
+      ok: false,
+      status: 'failed',
+      error: `Receipt result: ${receiptResult}`,
+      blockNumber: info.blockNumber,
+      fromAddress,
+      toAddress,
+      amountSun,
+    };
+  }
+
+  return {
+    ok: true,
+    status: 'confirmed',
+    blockNumber: info.blockNumber,
+    fromAddress,
+    toAddress,
+    amountSun,
+  };
 }
 
 export async function getTransactions(
@@ -161,9 +265,10 @@ export function fromPrivateKeyToAddress(privateKey: string): string {
 }
 
 export function createRandomPrivateKey(): string {
-  const tron = getTronWeb();
   try {
-    return tron.utils.accounts.generateRandomPrivateKey();
+    const tron = getTronWeb();
+    const account = tron.utils.accounts.generateAccount();
+    return account.privateKey;
   } catch (e) {
     console.error('Error generating key with TronWeb:', e);
     let privateKey = '';

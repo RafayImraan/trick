@@ -11,6 +11,11 @@ export async function GET() {
 
     const keys = await prisma.stealthKey.findMany({
       where: { userId: session.user.id },
+      include: {
+        paymentLink: {
+          select: { id: true, linkCode: true },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -28,16 +33,15 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { createRandomPrivateKey, fromPrivateKeyToAddress } = await import('@/lib/tron');
-    const privateKey = createRandomPrivateKey();
-    const address = fromPrivateKeyToAddress(privateKey);
+    const { createTronAccount } = await import('@/lib/tron');
+    const account = createTronAccount();
 
     const key = await prisma.stealthKey.create({
       data: {
         userId: session.user.id,
-        publicKey: '',
-        privateKey,
-        address,
+        publicKey: account.publicKey,
+        privateKey: account.privateKey,
+        address: account.address,
         balance: '0',
         isActive: true,
       },

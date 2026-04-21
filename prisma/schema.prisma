@@ -40,6 +40,8 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  stealthRootPublicKey  String?
+  stealthRootPrivateKey String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -60,30 +62,31 @@ model VerificationToken {
 model StealthKey {
   id           String   @id @default(cuid())
   userId       String
+  linkId       String?
   publicKey    String
   privateKey   String  @default("")
   address      String  @unique
   balance      String  @default("0")
+  ephemeralPublicKey String?
   createdAt    DateTime @default(now())
   isActive     Boolean @default(true)
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentLink   PaymentLink?   @relation(fields: [linkId], references: [id], onDelete: SetNull)
   transactions  Transaction[]
-  PaymentLink   PaymentLink?
 }
 
 model PaymentLink {
   id           String   @id @default(cuid())
   userId       String
   linkCode     String   @unique
-  stealthKeyId String?  @unique
   createdAt    DateTime @default(now())
   expiresAt    DateTime?
   isActive     Boolean  @default(true)
   clickCount   Int      @default(0)
 
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  stealthKey  StealthKey? @relation(fields: [stealthKeyId], references: [id])
+  stealthKeys StealthKey[]
 }
 
 model Transaction {
@@ -95,6 +98,7 @@ model Transaction {
   amount       String
   token        String   @default("TRX")
   status       String   @default("pending")
+  emailSentAt  DateTime?
   blockNumber Int?
   timestamp    DateTime @default(now())
 

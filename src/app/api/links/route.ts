@@ -1,7 +1,34 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { generatePaymentLinkId } from '@/lib/stealth';
+import { generatePaymentLinkId, generateStealthRootKeyPair } from '@/lib/stealth';
+
+async function ensureUserStealthRoot(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      stealthRootPrivateKey: true,
+      stealthRootPublicKey: true,
+    },
+  });
+
+  if (user?.stealthRootPrivateKey && user.stealthRootPublicKey) {
+    return user;
+  }
+
+  const rootKeys = generateStealthRootKeyPair();
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      stealthRootPrivateKey: rootKeys.privateKey,
+      stealthRootPublicKey: rootKeys.publicKey,
+    },
+    select: {
+      stealthRootPrivateKey: true,
+      stealthRootPublicKey: true,
+    },
+  });
+}
 
 export async function GET() {
   try {
@@ -12,6 +39,11 @@ export async function GET() {
 
     const links = await prisma.paymentLink.findMany({
       where: { userId: session.user.id },
+      include: {
+        _count: {
+          select: { stealthKeys: true },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -28,6 +60,8 @@ export async function POST() {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    await ensureUserStealthRoot(session.user.id);
 
     const linkCode = generatePaymentLinkId();
 

@@ -1,126 +1,179 @@
 import crypto from 'crypto';
+import { secp256k1 } from '@noble/curves/secp256k1';
+import { keccak_256 } from '@noble/hashes/sha3';
 
-const CURVE = 'secp256k1';
+const CURVE_ORDER = secp256k1.CURVE.n;
 
 function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+  const normalized = hex.startsWith('0x') ? hex.slice(2) : hex;
+  if (normalized.length % 2 !== 0) {
+    throw new Error('Invalid hex length');
   }
+
+  const bytes = new Uint8Array(normalized.length / 2);
+  for (let i = 0; i < normalized.length; i += 2) {
+    bytes[i / 2] = parseInt(normalized.slice(i, i + 2), 16);
+  }
+
   return bytes;
 }
 
 function bytesToHex(bytes: Uint8Array): string {
-  return Array.from(bytes)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+  return Buffer.from(bytes).toString('hex');
 }
 
-function base58Encode(buffer: Buffer | Uint8Array): string {
-  const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnopqrstuvwxyz';
-  let bytes: number[] = Array.from(buffer instanceof Uint8Array ? Buffer.from(buffer) : buffer);
+function normalizePrivateKey(privateKey: string): string {
+  return privateKey.replace(/^0x/, '').toLowerCase().padStart(64, '0');
+}
 
-  let leadingZeros = 0;
-  for (let i = 0; i < bytes.length && bytes[i] === 0; i++) {
-    leadingZeros++;
-  }
+function sha256(data: Uint8Array): Buffer {
+  return crypto.createHash('sha256').update(data).digest();
+}
 
-  const base58Chars: string[] = [];
-  while (bytes.length > 0) {
-    let carry = 0;
-    for (let i = 0; i < bytes.length; i++) {
-      carry = carry * 256 + bytes[i];
-      bytes[i] = Math.floor(carry / 58);
-      carry = carry % 58;
+function doubleSha256(data: Uint8Array): Buffer {
+  return sha256(sha256(data));
+}
+
+function base58Encode(buffer: Uint8Array): string {
+  const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  const digits = [0];
+
+  for (const byte of buffer) {
+    let carry = byte;
+    for (let i = 0; i < digits.length; i++) {
+      const value = digits[i] * 256 + carry;
+      digits[i] = value % 58;
+      carry = Math.floor(value / 58);
     }
-    base58Chars.push(alphabet[carry]);
-    while (bytes.length > 0 && bytes[bytes.length - 1] === 0) {
-      bytes.pop();
+    while (carry > 0) {
+      digits.push(carry % 58);
+      carry = Math.floor(carry / 58);
     }
   }
 
-  for (let i = 0; i < leadingZeros; i++) {
-    base58Chars.push(alphabet[0]);
+  let zeros = 0;
+  while (zeros < buffer.length && buffer[zeros] === 0) {
+    zeros++;
   }
 
-  return base58Chars.reverse().join('');
+  let result = '1'.repeat(zeros);
+  for (let i = digits.length - 1; i >= 0; i--) {
+    result += alphabet[digits[i]];
+  }
+
+  return result;
 }
 
-function sha256sha256(data: Buffer): Buffer {
-  const hash1 = crypto.createHash('sha256').update(data).digest();
-  return crypto.createHash('sha256').update(hash1).digest();
+function base58CheckEncode(payload: Uint8Array): string {
+  const checksum = doubleSha256(payload).subarray(0, 4);
+  const buffer = new Uint8Array(payload.length + checksum.length);
+  buffer.set(payload, 0);
+  buffer.set(checksum, payload.length);
+  return base58Encode(buffer);
 }
 
-function ripemd160(data: Buffer): Buffer {
-  return crypto.createHash('ripemd160').update(data).digest();
+function tronAddressFromPublicKey(publicKey: Uint8Array): string {
+  const uncompressed = publicKey.length === 65 ? publicKey.subarray(1) : publicKey;
+  const hash = keccak_256(uncompressed);
+  const payload = new Uint8Array(21);
+  payload[0] = 0x41;
+  payload.set(hash.subarray(hash.length - 20), 1);
+  return base58CheckEncode(payload);
 }
 
-function buf2hex(buffer: Buffer): string {
-  return Array.from(buffer)
-    .map(x => x.toString(16).padStart(2, '0'))
-    .join('');
+function scalarToHex(scalar: bigint): string {
+  return scalar.toString(16).padStart(64, '0');
 }
 
-export function tronAddressFromPrivateKey(privateKeyHex: string): string {
-  const privateKeyBytes = hexToBytes(privateKeyHex);
-  
-  const ecdh = crypto.createECDH(CURVE);
-  ecdh.setPrivateKey(Buffer.from(privateKeyBytes));
-  const publicKey = ecdh.getPublicKey();
-  
-  const publicKeyHex = buf2hex(publicKey);
-  const publicKeyBytes = hexToBytes(publicKeyHex);
-  
-  const hash = sha256sha256(Buffer.from(publicKeyBytes));
-  const addressBytes = new Uint8Array(21);
-  addressBytes[0] = 0x41;
-  addressBytes.set(hash.slice(0, 20), 1);
-
-  const checksum = sha256sha256(Buffer.from(addressBytes)).slice(0, 4);
-  const addressWithChecksum = new Uint8Array(25);
-  addressWithChecksum.set(addressBytes);
-  addressWithChecksum.set(checksum, 21);
-
-  return base58Encode(addressWithChecksum);
-}
-
-export function generateRandomKey(): { privateKey: string; address: string } {
-  const ecdh = crypto.createECDH(CURVE);
-  ecdh.generateKeys();
-
-  const privateKey = bytesToHex(ecdh.getPrivateKey());
-  const address = tronAddressFromPrivateKey(privateKey);
-
-  return { privateKey, address };
-}
-
-export function generateStealthAddress(
-  receiverPublicKey: string,
-  blindingFactor?: string
-): { stealthAddress: string; viewKey: string; blindingFactor: string } {
-  const bf = blindingFactor || bytesToHex(crypto.randomBytes(32));
-
-  const receiverPub = hexToBytes(receiverPublicKey);
-
-  const ecdh = crypto.createECDH(CURVE);
-  ecdh.setPrivateKey(Buffer.from(receiverPub));
-
-  const sharedSecret = ecdh.computeSecret(Buffer.from(hexToBytes(bf)));
-
-  const hash = sha256sha256(Buffer.from(sharedSecret));
-  const derivedKey = hash.slice(0, 32);
-
-  const address = tronAddressFromPrivateKey(bytesToHex(derivedKey));
-
-  return {
-    stealthAddress: address,
-    viewKey: '',
-    blindingFactor: bf,
-  };
+function hashToScalar(parts: Uint8Array[]): bigint {
+  const hash = crypto.createHash('sha256');
+  for (const part of parts) {
+    hash.update(part);
+  }
+  const scalar = BigInt(`0x${hash.digest('hex')}`) % CURVE_ORDER;
+  return scalar === BigInt(0) ? BigInt(1) : scalar;
 }
 
 export function generatePaymentLinkId(): string {
   return crypto.randomBytes(8).toString('hex');
+}
+
+export function generateStealthRootKeyPair(): {
+  privateKey: string;
+  publicKey: string;
+} {
+  const privateKey = bytesToHex(secp256k1.utils.randomPrivateKey());
+  const publicKey = bytesToHex(secp256k1.getPublicKey(privateKey, false));
+
+  return {
+    privateKey,
+    publicKey,
+  };
+}
+
+export function deriveSenderStealthAddress(
+  receiverPublicKey: string,
+  context: string
+): {
+  stealthAddress: string;
+  stealthPublicKey: string;
+  ephemeralPrivateKey: string;
+  ephemeralPublicKey: string;
+  sharedSecretHash: string;
+} {
+  const ephemeralPrivateKey = normalizePrivateKey(bytesToHex(secp256k1.utils.randomPrivateKey()));
+  const receiverPublicKeyBytes = hexToBytes(receiverPublicKey);
+  const ephemeralPublicKey = bytesToHex(secp256k1.getPublicKey(ephemeralPrivateKey, false));
+  const sharedSecret = secp256k1.getSharedSecret(ephemeralPrivateKey, receiverPublicKeyBytes, false);
+  const tweak = hashToScalar([sharedSecret, Buffer.from(context, 'utf8')]);
+
+  const receiverPoint = secp256k1.ProjectivePoint.fromHex(receiverPublicKeyBytes);
+  const stealthPublicKey = receiverPoint.add(secp256k1.ProjectivePoint.BASE.multiply(tweak)).toHex(false);
+  const stealthAddress = tronAddressFromPublicKey(hexToBytes(stealthPublicKey));
+
+  return {
+    stealthAddress,
+    stealthPublicKey,
+    ephemeralPrivateKey,
+    ephemeralPublicKey,
+    sharedSecretHash: bytesToHex(sharedSecret),
+  };
+}
+
+export function deriveReceiverStealthKey(
+  receiverPrivateKey: string,
+  ephemeralPublicKey: string,
+  context: string
+): {
+  stealthAddress: string;
+  stealthPrivateKey: string;
+  stealthPublicKey: string;
+  ephemeralPublicKey: string;
+  sharedSecretHash: string;
+} {
+  const receiverPrivateKeyHex = normalizePrivateKey(receiverPrivateKey);
+  const receiverPrivateScalar = secp256k1.utils.normPrivateKeyToScalar(receiverPrivateKeyHex);
+  const receiverPublicKey = bytesToHex(secp256k1.getPublicKey(receiverPrivateKeyHex, false));
+  const sharedSecret = secp256k1.getSharedSecret(receiverPrivateKeyHex, hexToBytes(ephemeralPublicKey), false);
+  const tweak = hashToScalar([sharedSecret, Buffer.from(context, 'utf8')]);
+  const stealthPrivateScalar = (receiverPrivateScalar + tweak) % CURVE_ORDER;
+
+  if (stealthPrivateScalar === BigInt(0)) {
+    throw new Error('Derived invalid stealth private key');
+  }
+
+  const stealthPrivateKey = scalarToHex(stealthPrivateScalar);
+  const receiverPoint = secp256k1.ProjectivePoint.fromHex(hexToBytes(receiverPublicKey));
+  const stealthPublicKey = receiverPoint.add(secp256k1.ProjectivePoint.BASE.multiply(tweak)).toHex(false);
+  const stealthAddress = tronAddressFromPublicKey(hexToBytes(stealthPublicKey));
+
+  return {
+    stealthAddress,
+    stealthPrivateKey,
+    stealthPublicKey,
+    ephemeralPublicKey,
+    sharedSecretHash: bytesToHex(sharedSecret),
+  };
 }
 
 export function encodePaymentLink(

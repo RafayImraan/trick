@@ -11,6 +11,10 @@ interface StealthKey {
   address: string;
   balance: string;
   createdAt: string;
+  paymentLink?: {
+    id: string;
+    linkCode: string;
+  } | null;
 }
 
 interface PaymentLink {
@@ -18,7 +22,9 @@ interface PaymentLink {
   linkCode: string;
   createdAt: string;
   clickCount: number;
-  stealthKeyId?: string;
+  _count?: {
+    stealthKeys: number;
+  };
 }
 
 interface Transaction {
@@ -64,12 +70,12 @@ export default function DashboardPage() {
         fetch('/api/keys'),
         fetch('/api/links'),
         fetch('/api/transactions'),
-        fetch('/api/balance', { method: 'POST' })
+        fetch('/api/balance')
       ]);
       const keysData = await keysRes.json();
       const linksData = await linksRes.json();
       const txData = await txRes.json();
-      const balanceData = await balanceRes.json();
+      await balanceRes.json();
       setKeys(keysData.keys || []);
       setLinks(linksData.links || []);
       setTransactions(txData.transactions || []);
@@ -84,7 +90,7 @@ export default function DashboardPage() {
   const syncBalances = async () => {
     setSyncing(true);
     try {
-      await fetch('/api/balance', { method: 'POST' });
+      await fetch('/api/balance');
       await fetchData();
     } catch (error) {
       console.error('Failed to sync balances:', error);
@@ -316,7 +322,9 @@ export default function DashboardPage() {
                         <code className="mono" style={{ display: 'block', marginBottom: 4 }}>
                           {formatAddress(link.linkCode)}
                         </code>
-                        <p className="muted" style={{ fontSize: 14 }}>Clicks: {link.clickCount}</p>
+                        <p className="muted" style={{ fontSize: 14 }}>
+                          Clicks: {link.clickCount} · Stealth addresses: {link._count?.stealthKeys || 0}
+                        </p>
                       </div>
                       <div className="link-actions">
                         <button onClick={() => copyLink(link.id, link.linkCode)} className="btn-secondary btn-sm">
@@ -371,6 +379,11 @@ export default function DashboardPage() {
                         <p className="muted" style={{ fontSize: 14 }}>
                           Created: {new Date(key.createdAt).toLocaleDateString()}
                         </p>
+                        {key.paymentLink?.linkCode && (
+                          <p className="muted" style={{ fontSize: 14 }}>
+                            Link: {formatAddress(key.paymentLink.linkCode)}
+                          </p>
+                        )}
                       </div>
                       <div style={{ textAlign: 'right' }}>
                         <div className="pill pill-success" style={{ marginBottom: 8 }}>

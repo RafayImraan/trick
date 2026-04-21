@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { deriveSenderStealthAddress } from '@/lib/stealth';
 
 type TronWeb = {
   ready?: boolean;
@@ -35,7 +36,9 @@ export default function PayPage() {
   const [txHash, setTxHash] = useState('');
   const [walletConnected, setWalletConnected] = useState(false);
   const [balance, setBalance] = useState(0);
-  const [receiverAddress, setReceiverAddress] = useState('');
+  const [receiverPublicKey, setReceiverPublicKey] = useState('');
+  const [paymentContext, setPaymentContext] = useState('');
+  const [previewStealthAddress, setPreviewStealthAddress] = useState('');
 
   const linkId = params.id as string;
   const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
@@ -48,6 +51,22 @@ export default function PayPage() {
       setAmount(urlAmount);
     }
   }, []);
+
+  const getErrorMessage = (err: unknown): string => {
+    if (err instanceof Error) {
+      return err.message;
+    }
+
+    if (typeof err === 'string') {
+      return err;
+    }
+
+    if (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string') {
+      return err.message;
+    }
+
+    return 'Transaction failed';
+  };
 
   const checkWallet = async () => {
     setStatus('connecting');
@@ -74,9 +93,9 @@ export default function PayPage() {
       const data = await res.json();
       console.log('Receiver API response:', data);
       console.log('Receiver API status:', res.status);
-      if (data.address) {
-        setReceiverAddress(data.address);
-        console.log('Setting receiver address:', data.address);
+      if (data.receiverPublicKey && data.paymentContext) {
+        setReceiverPublicKey(data.receiverPublicKey);
+        setPaymentContext(data.paymentContext);
       } else if (data.error) {
         console.error('API error:', data.error);
         setError(data.error);
@@ -92,8 +111,8 @@ export default function PayPage() {
       return;
     }
 
-    if (!receiverAddress) {
-      setError('No receiver address');
+    if (!receiverPublicKey || !paymentContext) {
+      setError('Receiver stealth profile is not available');
       return;
     }
 
@@ -103,33 +122,55 @@ export default function PayPage() {
       return;
     }
 
-    console.log('Sending to address:', receiverAddress);
-    console.log('Amount in sun:', Math.floor(parseFloat(amount) * 1e6));
-
     setStatus('sending');
     setError('');
 
     try {
       const amountSun = Math.floor(parseFloat(amount) * 1e6);
+      const derivedStealth = deriveSenderStealthAddress(receiverPublicKey, paymentContext);
+      setPreviewStealthAddress(derivedStealth.stealthAddress);
 
-      const result = await tron.trx.sendTransaction(receiverAddress, amountSun);
+      const result = await tron.trx.sendTransaction(derivedStealth.stealthAddress, amountSun);
 
       setTxHash(result.txid);
       setStatus('success');
 
-      await fetch(`/api/transactions`, {
+      const recordRes = await fetch(`/api/transactions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           linkId,
           txHash: result.txid,
           amount: amount,
-          toAddress: receiverAddress,
+          stealthAddress: derivedStealth.stealthAddress,
+          ephemeralPublicKey: derivedStealth.ephemeralPublicKey,
+          fromAddress: tron.defaultAddress.base58,
+          toAddress: derivedStealth.stealthAddress,
         }),
       });
+
+      const recordData = await recordRes.json();
+      if (!recordRes.ok || recordData.error) {
+        throw new Error(recordData.error || 'Failed to record transaction');
+      }
     } catch (err: unknown) {
-      console.error('Send error:', err);
-      setError(err instanceof Error ? err.message : 'Transaction failed');
+      const message = getErrorMessage(err);
+      const normalized = message.toLowerCase();
+      const userDeclined =
+        normalized.includes('confirmation declined by user') ||
+        normalized.includes('declined by user') ||
+        normalized.includes('user rejected') ||
+        normalized.includes('user cancelled') ||
+        normalized.includes('canceled by user');
+
+      if (userDeclined) {
+        console.info('Payment confirmation declined by user');
+        setError('Transaction cancelled');
+      } else {
+        console.error('Send error:', err);
+        setError(message);
+      }
+
       setStatus('error');
     }
   };
@@ -158,6 +199,11 @@ export default function PayPage() {
           <p style={{ color: 'var(--color-text-secondary)', marginBottom: 16 }}>
             {amount} TRX sent successfully
           </p>
+          {previewStealthAddress && (
+            <code className="mono" style={{ fontSize: 12, wordBreak: 'break-all', display: 'block', marginBottom: 16 }}>
+              {previewStealthAddress}
+            </code>
+          )}
           <code className="mono" style={{ fontSize: 12, wordBreak: 'break-all', display: 'block', marginBottom: 16 }}>
             {txHash}
           </code>
@@ -184,6 +230,13 @@ export default function PayPage() {
               <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--color-primary)' }}>
                 {balance.toFixed(2)} TRX
               </div>
+            </div>
+
+            <div style={{ marginBottom: 16, padding: 12, background: 'var(--color-bg-light)', borderRadius: 8 }}>
+              <div style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 6 }}>Receiving stealth address</div>
+              <code className="mono" style={{ fontSize: 12, wordBreak: 'break-all', display: 'block' }}>
+                {previewStealthAddress || 'A new stealth address will be generated when you send'}
+              </code>
             </div>
 
             <div style={{ marginBottom: 16 }}>
