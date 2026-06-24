@@ -24,6 +24,7 @@ export function Header() {
           {status === 'authenticated' ? (
             <>
               <Link href="/dashboard" className="header-link">Dashboard</Link>
+              <Link href="/transactions" className="header-link">Transactions</Link>
               <button
                 onClick={() => signOut()}
                 className="header-link"

@@ -27,22 +27,11 @@ interface PaymentLink {
   };
 }
 
-interface Transaction {
-  id: string;
-  txHash: string;
-  fromAddress: string;
-  toAddress: string;
-  amount: string;
-  status: string;
-  timestamp: string;
-}
-
 export default function DashboardPage() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
   const [keys, setKeys] = useState<StealthKey[]>([]);
   const [links, setLinks] = useState<PaymentLink[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const [showQR, setShowQR] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -66,24 +55,20 @@ export default function DashboardPage() {
 
   const fetchData = async () => {
     try {
-      const [keysRes, linksRes, txRes, balanceRes] = await Promise.all([
+      const [keysRes, linksRes, balanceRes] = await Promise.all([
         fetch('/api/keys'),
         fetch('/api/links'),
-        fetch('/api/transactions'),
         fetch('/api/balance')
       ]);
       const keysData = await keysRes.json();
       const linksData = await linksRes.json();
-      const txData = await txRes.json();
       await balanceRes.json();
       setKeys(keysData.keys || []);
       setLinks(linksData.links || []);
-      setTransactions(txData.transactions || []);
     } catch (error) {
       console.error('Failed to fetch data:', error);
       setKeys([]);
       setLinks([]);
-      setTransactions([]);
     }
   };
 
@@ -402,28 +387,13 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          <section className="panel" style={{ marginTop: 22, padding: 24 }}>
-            <h3 style={{ marginBottom: 16 }}>Recent Transactions</h3>
-            {transactions.length === 0 ? (
-              <p className="muted">No transactions yet.</p>
-            ) : (
-              <div className="list-stack">
-                {transactions.slice(0, 10).map((tx) => (
-                  <div key={tx.id} className="list-item">
-                    <div>
-                      <code className="mono" style={{ fontSize: 12, wordBreak: 'break-all' }}>{tx.txHash}</code>
-                      <p className="muted" style={{ fontSize: 12 }}>
-                        {tx.fromAddress ? formatAddress(tx.fromAddress) : 'external'} → {formatAddress(tx.toAddress)}
-                      </p>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div className="pill pill-success">+{parseFloat(tx.amount).toFixed(2)} TRX</div>
-                      <p className="muted" style={{ fontSize: 12 }}>{new Date(tx.timestamp).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+          <section className="panel" style={{ marginTop: 22, padding: 24, textAlign: 'center' }}>
+            <p className="muted" style={{ marginBottom: 12 }}>
+              View all incoming payments on the Transactions page.
+            </p>
+            <a href="/transactions" className="btn-primary" style={{ display: 'inline-block', padding: '12px 24px' }}>
+              View All Transactions
+            </a>
           </section>
         </div>
       </main>
