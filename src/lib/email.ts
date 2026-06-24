@@ -223,6 +223,7 @@ export async function sendNewPaymentLinkEmail(
   const safeLink = escapeHtml(link);
   const safeLinkCode = escapeHtml(linkCode);
   const fullLink = `https://trick.fi/pay/${safeLinkCode}`;
+  const subject = 'Your new Trick payment link';
   const text = `Your new payment link has been created.\n\nLink: ${fullLink}\n\nShare this link to receive crypto privately.`;
 
   const html = `
