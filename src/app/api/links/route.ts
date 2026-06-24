@@ -38,7 +38,7 @@ export async function GET() {
     }
 
     const links = await prisma.paymentLink.findMany({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id, isActive: true },
       include: {
         _count: {
           select: { stealthKeys: true },
@@ -64,6 +64,16 @@ export async function POST() {
     await ensureUserStealthRoot(session.user.id);
 
     const linkCode = generatePaymentLinkId();
+
+    await prisma.paymentLink.updateMany({
+      where: {
+        userId: session.user.id,
+        isActive: true,
+      },
+      data: {
+        isActive: false,
+      },
+    });
 
     const link = await prisma.paymentLink.create({
       data: {
