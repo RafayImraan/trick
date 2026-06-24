@@ -104,7 +104,7 @@ export default function DashboardPage() {
       const res = await fetch('/api/links', { method: 'POST' });
       const data = await res.json();
       if (data.link) {
-        setLinks((currentLinks) => [...currentLinks, data.link]);
+        setLinks([data.link]);
       }
     } catch (error) {
       console.error('Failed to generate link:', error);
