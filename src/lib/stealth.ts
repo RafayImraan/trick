@@ -95,7 +95,7 @@ function hashToScalar(parts: Uint8Array[]): bigint {
 }
 
 export function generatePaymentLinkId(): string {
-  return crypto.randomBytes(8).toString('hex');
+  return crypto.randomBytes(16).toString('hex');
 }
 
 export function generateStealthRootKeyPair(): {

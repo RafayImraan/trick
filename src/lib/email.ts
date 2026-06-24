@@ -8,6 +8,15 @@ interface EmailOptions {
   text?: string;
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const createTransporter = () => {
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
   const port = parseInt(process.env.SMTP_PORT || '587');
@@ -66,8 +75,12 @@ export async function sendPaymentReceivedEmail(
   txHash: string,
   stealthAddress: string
 ): Promise<boolean> {
+  const safeAmount = escapeHtml(amount);
+  const safeTxHash = escapeHtml(txHash);
+  const safeStealthAddress = escapeHtml(stealthAddress);
+
   const subject = 'You received crypto!';
-  const text = `You received ${amount} TRX!\n\nTransaction: ${txHash}\nStealth Address: ${stealthAddress}\n\nView in dashboard: https://trick.fi/dashboard`;
+  const text = `You received ${safeAmount} TRX!\n\nTransaction: ${safeTxHash}\nStealth Address: ${safeStealthAddress}\n\nView in dashboard: https://trick.fi/dashboard`;
 
   const html = `
 <!DOCTYPE html>
@@ -92,19 +105,19 @@ export async function sendPaymentReceivedEmail(
                 <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 24px;">You received crypto!</h2>
                 <div style="background: #fff5f5; border-radius: 12px; padding: 24px; margin: 24px 0;">
                   <p style="margin: 0 0 8px 0; color: #666666; font-size: 14px;">Amount Received</p>
-                  <p style="margin: 0; color: #ff4336; font-size: 32px; font-weight: 700;">${amount} TRX</p>
+                  <p style="margin: 0; color: #ff4336; font-size: 32px; font-weight: 700;">${safeAmount} TRX</p>
                 </div>
                 <table width="100%" cellpadding="0" cellspacing="0">
                   <tr>
                     <td style="padding: 12px 0; border-bottom: 1px solid #e5e5e5;">
                       <p style="margin: 0 0 4px 0; color: #666666; font-size: 12px;">Transaction Hash</p>
-                      <code style="color: #1a1a1a; font-size: 12px; word-break: break-all;">${txHash}</code>
+                      <code style="color: #1a1a1a; font-size: 12px; word-break: break-all;">${safeTxHash}</code>
                     </td>
                   </tr>
                   <tr>
                     <td style="padding: 12px 0;">
                       <p style="margin: 0 0 4px 0; color: #666666; font-size: 12px;">Stealth Address</p>
-                      <code style="color: #1a1a1a; font-size: 12px; word-break: break-all;">${stealthAddress}</code>
+                      <code style="color: #1a1a1a; font-size: 12px; word-break: break-all;">${safeStealthAddress}</code>
                     </td>
                   </tr>
                 </table>
@@ -135,8 +148,12 @@ export async function sendWithdrawalConfirmationEmail(
   toAddress: string,
   txHash: string
 ): Promise<boolean> {
+  const safeAmount = escapeHtml(amount);
+  const safeToAddress = escapeHtml(toAddress);
+  const safeTxHash = escapeHtml(txHash);
+
   const subject = 'Withdrawal Confirmed';
-  const text = `Your withdrawal of ${amount} TRX has been initiated.\n\nTo Address: ${toAddress}\nTransaction: ${txHash}\n\nView in dashboard: https://trick.fi/dashboard`;
+  const text = `Your withdrawal of ${safeAmount} TRX has been initiated.\n\nTo Address: ${safeToAddress}\nTransaction: ${safeTxHash}\n\nView in dashboard: https://trick.fi/dashboard`;
 
   const html = `
 <!DOCTYPE html>
@@ -161,19 +178,19 @@ export async function sendWithdrawalConfirmationEmail(
                 <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 24px;">Withdrawal Initiated</h2>
                 <div style="background: #f0fff4; border-radius: 12px; padding: 24px; margin: 24px 0;">
                   <p style="margin: 0 0 8px 0; color: #666666; font-size: 14px;">Amount Withdrawn</p>
-                  <p style="margin: 0; color: #00aa55; font-size: 32px; font-weight: 700;">${amount} TRX</p>
+                  <p style="margin: 0; color: #00aa55; font-size: 32px; font-weight: 700;">${safeAmount} TRX</p>
                 </div>
                 <table width="100%" cellpadding="0" cellspacing="0">
                   <tr>
                     <td style="padding: 12px 0; border-bottom: 1px solid #e5e5e5;">
                       <p style="margin: 0 0 4px 0; color: #666666; font-size: 12px;">To Address</p>
-                      <code style="color: #1a1a1a; font-size: 12px; word-break: break-all;">${toAddress}</code>
+                      <code style="color: #1a1a1a; font-size: 12px; word-break: break-all;">${safeToAddress}</code>
                     </td>
                   </tr>
                   <tr>
                     <td style="padding: 12px 0;">
                       <p style="margin: 0 0 4px 0; color: #666666; font-size: 12px;">Transaction Hash</p>
-                      <code style="color: #1a1a1a; font-size: 12px; word-break: break-all;">${txHash}</code>
+                      <code style="color: #1a1a1a; font-size: 12px; word-break: break-all;">${safeTxHash}</code>
                     </td>
                   </tr>
                 </table>
@@ -203,8 +220,9 @@ export async function sendNewPaymentLinkEmail(
   link: string,
   linkCode: string
 ): Promise<boolean> {
-  const subject = 'Your new Trick payment link';
-  const fullLink = `https://trick.fi/pay/${linkCode}`;
+  const safeLink = escapeHtml(link);
+  const safeLinkCode = escapeHtml(linkCode);
+  const fullLink = `https://trick.fi/pay/${safeLinkCode}`;
   const text = `Your new payment link has been created.\n\nLink: ${fullLink}\n\nShare this link to receive crypto privately.`;
 
   const html = `

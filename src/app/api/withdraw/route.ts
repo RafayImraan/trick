@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { sendTRX, getWalletBalance, validateAddress, fromPrivateKeyToAddress } from '@/lib/tron';
-import { sendWithdrawalConfirmationEmail } from '@/lib/email';
+import { sendTRX, getWalletBalance, validateAddress } from '@/lib/tron';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
     const session = await auth();
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    if (!rateLimit(`withdraw:${session.user.id}`, 3, 60_000)) {
+      return NextResponse.json({ error: 'Too many requests. Try again later.' }, { status: 429 });
     }
 
     const body = await request.json();
@@ -27,6 +32,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
     }
 
+    const decimalParts = amount.split('.');
+    if (decimalParts.length > 1 && decimalParts[1].length > 6) {
+      return NextResponse.json({ error: 'Amount has too many decimal places (max 6)' }, { status: 400 });
+    }
+
+    if (amountNum > 1000000) {
+      return NextResponse.json({ error: 'Amount exceeds maximum (1,000,000 TRX)' }, { status: 400 });
+    }
+
     const stealthKey = await prisma.stealthKey.findFirst({
       where: { id: stealthKeyId, userId: session.user.id },
     });
@@ -40,9 +54,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Insufficient balance' }, { status: 400 });
     }
 
-    const gasReserve = 1;
+    const gasReserve = 2;
     if (currentBalance < amountNum + gasReserve) {
-      return NextResponse.json({ error: 'Insufficient balance for gas' }, { status: 400 });
+      return NextResponse.json({ error: 'Insufficient balance (need extra for network fees)' }, { status: 400 });
     }
 
     const privateKey = stealthKey.privateKey;
@@ -56,7 +70,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: result.error || 'Transaction failed' }, { status: 500 });
     }
 
-    const newBalance = (parseFloat(stealthKey.balance) - amountNum).toString();
+    const currentDbBalance = parseFloat(stealthKey.balance) || 0;
+    const newBalance = Math.max(0, currentDbBalance - amountNum).toString();
     await prisma.stealthKey.update({
       where: { id: stealthKeyId },
       data: { balance: newBalance },
@@ -73,13 +88,6 @@ export async function POST(request: Request) {
       },
     });
 
-    await sendWithdrawalConfirmationEmail(
-      session.user.email,
-      amountNum.toString(),
-      toAddress,
-      result.txid!
-    );
-
     return NextResponse.json({
       success: true,
       txHash: result.txid,
@@ -87,6 +95,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Withdrawal error:', error);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

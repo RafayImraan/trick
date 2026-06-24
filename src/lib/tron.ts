@@ -11,20 +11,30 @@ export const TOKEN_VAULT_CONTRACT_ADDRESS = process.env.TOKEN_VAULT_CONTRACT_ADD
 export const TRX_TOKEN = 'TRX';
 export const USDT_TOKEN = 'TR7NHqjeKQxGTCi8qZLJEoU4y3E2sQ3q6M';
 
+function createTronWebInstance(privateKey?: string) {
+  const TronWebModule = require('tronweb');
+  const TronWebClass = TronWebModule.TronWeb || TronWebModule.default || TronWebModule;
+  const headers = TRON_API_KEY ? { 'TRON-PRO-API-KEY': TRON_API_KEY } : undefined;
+
+  const instance: any = new TronWebClass({
+    fullHost: FULL_NODE,
+    solidityNode: SOLIDITY_NODE,
+    eventServer: EVENT_SERVER,
+    headers,
+  });
+
+  if (privateKey) {
+    instance.setPrivateKey(privateKey);
+  }
+
+  return instance;
+}
+
 let tronWebInstance: any = null;
 
 function getTronWeb() {
   if (!tronWebInstance) {
-    const TronWebModule = require('tronweb');
-    const TronWebClass = TronWebModule.TronWeb || TronWebModule.default || TronWebModule;
-    const headers = TRON_API_KEY ? { 'TRON-PRO-API-KEY': TRON_API_KEY } : undefined;
-
-    tronWebInstance = new TronWebClass({
-      fullHost: FULL_NODE,
-      solidityNode: SOLIDITY_NODE,
-      eventServer: EVENT_SERVER,
-      headers,
-    });
+    tronWebInstance = createTronWebInstance();
   }
   return tronWebInstance;
 }
@@ -105,14 +115,14 @@ export async function sendTRX(
   amount: number
 ): Promise<{ success: boolean; txid?: string; error?: string }> {
   try {
-    const tronWeb = getTronWeb();
-    tronWeb.setPrivateKey(fromPrivateKey);
-    const amountSun = Math.floor(amount * 1e6);
-    const result = await tronWeb.trx.sendTransaction(toAddress, amountSun);
+    const tronWeb = createTronWebInstance(fromPrivateKey);
+    const amountSun = BigInt(Math.floor(amount * 1e6));
+    const result = await tronWeb.trx.sendTransaction(toAddress, amountSun.toString());
     return { success: true, txid: result.txid };
   } catch (error) {
     console.error('Error sending TRX:', error);
-    return { success: false, error: String(error) };
+    const message = error instanceof Error ? error.message : 'Transaction failed';
+    return { success: false, error: message };
   }
 }
 
@@ -123,15 +133,15 @@ export async function sendToken(
   tokenAddress: string
 ): Promise<{ success: boolean; txid?: string; error?: string }> {
   try {
-    const tronWeb = getTronWeb();
-    tronWeb.setPrivateKey(fromPrivateKey);
+    const tronWeb = createTronWebInstance(fromPrivateKey);
+    const amountSun = BigInt(Math.floor(amount * 1e6));
     const contract = await tronWeb.contract().at(tokenAddress);
-    const amountSun = Math.floor(amount * 1e6);
-    const result = await contract.transfer(toAddress, amountSun).send();
+    const result = await contract.transfer(toAddress, amountSun.toString()).send();
     return { success: true, txid: result };
   } catch (error) {
     console.error('Error sending token:', error);
-    return { success: false, error: String(error) };
+    const message = error instanceof Error ? error.message : 'Transaction failed';
+    return { success: false, error: message };
   }
 }
 
@@ -256,7 +266,6 @@ export function fromPrivateKeyToAddress(privateKey: string): string {
   const tron = getTronWeb();
   try {
     const address = tron.address.fromPrivateKey(privateKey);
-    console.log('fromPrivateKeyToAddress:', privateKey.substring(0, 8) + '...', '=>', address);
     return address;
   } catch (e) {
     console.error('Error converting private key to address:', e);
@@ -292,15 +301,15 @@ export async function depositToVault(
   }
 
   try {
-    const tronWeb = getTronWeb();
-    tronWeb.setPrivateKey(privateKey);
-    const amountSun = Math.floor(amount * 1e6);
+    const tronWeb = createTronWebInstance(privateKey);
+    const amountSun = BigInt(Math.floor(amount * 1e6));
     const contract = await tronWeb.contract().at(VAULT_CONTRACT_ADDRESS);
-    const result = await contract.deposit().send({ callValue: amountSun });
+    const result = await contract.deposit().send({ callValue: amountSun.toString() });
     return { success: true, txid: result };
   } catch (error) {
     console.error('Error depositing to vault:', error);
-    return { success: false, error: String(error) };
+    const message = error instanceof Error ? error.message : 'Transaction failed';
+    return { success: false, error: message };
   }
 }
 
@@ -314,14 +323,14 @@ export async function withdrawFromVault(
   }
 
   try {
-    const tronWeb = getTronWeb();
-    tronWeb.setPrivateKey(ownerPrivateKey);
-    const amountSun = Math.floor(amount * 1e6);
+    const tronWeb = createTronWebInstance(ownerPrivateKey);
+    const amountSun = BigInt(Math.floor(amount * 1e6));
     const contract = await tronWeb.contract().at(VAULT_CONTRACT_ADDRESS);
-    const result = await contract.withdraw(recipientAddress, amountSun).send();
+    const result = await contract.withdraw(recipientAddress, amountSun.toString()).send();
     return { success: true, txid: result };
   } catch (error) {
     console.error('Error withdrawing from vault:', error);
-    return { success: false, error: String(error) };
+    const message = error instanceof Error ? error.message : 'Transaction failed';
+    return { success: false, error: message };
   }
 }

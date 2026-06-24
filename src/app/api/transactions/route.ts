@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { notifyPaymentReceived } from '@/lib/notifications';
 import { deriveReceiverStealthKey } from '@/lib/stealth';
 import { getWalletBalance, verifyTrxPayment } from '@/lib/tron';
+import { rateLimit } from '@/lib/rate-limit';
 
 async function reconcileTransaction(transaction: {
   id: string;
@@ -67,6 +68,15 @@ async function reconcileTransaction(transaction: {
 
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!rateLimit(`create-tx:${session.user.id}`, 20, 60_000)) {
+      return NextResponse.json({ error: 'Too many requests. Try again later.' }, { status: 429 });
+    }
+
     const body = await request.json();
     const { linkId, txHash, amount, fromAddress, toAddress, stealthAddress, ephemeralPublicKey } = body;
 
@@ -172,7 +182,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Error creating transaction:', error);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -216,6 +226,6 @@ export async function GET() {
     return NextResponse.json({ transactions });
   } catch (error) {
     console.error('Error fetching transactions:', error);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -48,7 +48,10 @@ export default function PayPage() {
     checkWallet();
     fetchReceiver();
     if (urlAmount) {
-      setAmount(urlAmount);
+      const parsed = parseFloat(urlAmount);
+      if (!isNaN(parsed) && parsed > 0) {
+        setAmount(urlAmount);
+      }
     }
   }, []);
 

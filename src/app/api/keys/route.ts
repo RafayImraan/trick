@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET() {
   try {
@@ -11,7 +12,12 @@ export async function GET() {
 
     const keys = await prisma.stealthKey.findMany({
       where: { userId: session.user.id },
-      include: {
+      select: {
+        id: true,
+        address: true,
+        balance: true,
+        createdAt: true,
+        isActive: true,
         paymentLink: {
           select: { id: true, linkCode: true },
         },
@@ -22,7 +28,7 @@ export async function GET() {
     return NextResponse.json({ keys });
   } catch (error) {
     console.error('Error fetching keys:', error);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -31,6 +37,10 @@ export async function POST() {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!rateLimit(`create-key:${session.user.id}`, 5, 60_000)) {
+      return NextResponse.json({ error: 'Too many requests. Try again later.' }, { status: 429 });
     }
 
     const { createTronAccount } = await import('@/lib/tron');
@@ -45,11 +55,18 @@ export async function POST() {
         balance: '0',
         isActive: true,
       },
+      select: {
+        id: true,
+        address: true,
+        balance: true,
+        createdAt: true,
+        isActive: true,
+      },
     });
 
     return NextResponse.json({ key });
   } catch (error) {
     console.error('Error creating key:', error);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

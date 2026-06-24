@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generateStealthRootKeyPair } from '@/lib/stealth';
+import { rateLimit } from '@/lib/rate-limit';
 
 async function ensureReceiverRootKeys(userId: string) {
   const user = await prisma.user.findUnique({
@@ -36,6 +37,11 @@ export async function GET(
   try {
     const { id } = await params;
 
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    if (!rateLimit(`pay-link:${ip}`, 60, 60_000)) {
+      return NextResponse.json({ error: 'Too many requests. Try again later.' }, { status: 429 });
+    }
+
     const link = await prisma.paymentLink.findUnique({
       where: { linkCode: id },
     });
@@ -59,6 +65,6 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error resolving link:', error);
-    return NextResponse.json({ error: String(error) }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -5,6 +5,12 @@ import Credentials from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from './prisma';
 
+declare const tronWeb: {
+  trx: {
+    verifyMessage: (messageHex: string, signature: string, address: string) => boolean;
+  };
+};
+
 const providers = [];
 
 if (process.env.AUTH_GOOGLE_ID) {
@@ -12,7 +18,7 @@ if (process.env.AUTH_GOOGLE_ID) {
     Google({
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET || '',
-      allowDangerousEmailAccountLinking: true,
+      allowDangerousEmailAccountLinking: false,
     }),
   );
 }
@@ -31,14 +37,53 @@ providers.push(
     name: 'wallet',
     credentials: {
       walletAddress: { label: 'Wallet Address', type: 'text' },
+      signature: { label: 'Signature', type: 'text' },
+      nonce: { label: 'Nonce', type: 'text' },
     },
     async authorize(credentials) {
-      if (!credentials?.walletAddress) {
+      if (!credentials?.walletAddress || !credentials?.signature || !credentials?.nonce) {
         return null;
       }
-      
+
       const walletAddress = credentials.walletAddress as string;
-      
+      const signature = credentials.signature as string;
+      const nonce = credentials.nonce as string;
+
+      const challenge = await prisma.authChallenge.findUnique({
+        where: { nonce },
+      });
+
+      if (!challenge) {
+        return null;
+      }
+
+      if (challenge.usedAt) {
+        return null;
+      }
+
+      if (new Date() > challenge.expiresAt) {
+        return null;
+      }
+
+      const messageHex = Buffer.from(`trick-auth:${nonce}`).toString('hex');
+
+      try {
+        const { TronWeb } = require('tronweb');
+        const tronWebInstance = new TronWeb({ fullHost: 'https://api.nile.org' });
+        const isValid = tronWebInstance.trx.verifyMessage(messageHex, signature, walletAddress);
+
+        if (!isValid) {
+          return null;
+        }
+      } catch {
+        return null;
+      }
+
+      await prisma.authChallenge.update({
+        where: { id: challenge.id },
+        data: { usedAt: new Date() },
+      });
+
       let user = await prisma.user.findFirst({
         where: { email: `${walletAddress}@tron.wallet` },
       });

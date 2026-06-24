@@ -38,3 +38,8 @@ Thumbs.db
 # Misc
 *.log
 *.tsbuildinfo
+
+# Build artifacts
+artifacts/
+cache/
+

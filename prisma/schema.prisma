@@ -90,6 +90,14 @@ model PaymentLink {
   stealthKeys StealthKey[]
 }
 
+model AuthChallenge {
+  id        String   @id @default(cuid())
+  nonce     String   @unique
+  usedAt    DateTime?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
 model Transaction {
   id            String   @id @default(cuid())
   stealthKeyId  String
