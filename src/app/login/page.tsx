@@ -44,7 +44,7 @@ export default function LoginPage() {
             <div className="pill pill-danger" style={{ marginBottom: 18, width: 'fit-content' }}>
               Secure Access
             </div>
-            <h2 style={{ fontSize: 36, marginBottom: 8 }}>Welcome to Trick</h2>
+            <h2 className="fs-login-h2" style={{ fontSize: 36, marginBottom: 8 }}>Welcome to Trick</h2>
             <p className="muted" style={{ marginBottom: 28 }}>
               Sign in to create private payment links, monitor activity, and manage stealth addresses from one place.
             </p>

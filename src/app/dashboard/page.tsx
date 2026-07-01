@@ -204,12 +204,12 @@ export default function DashboardPage() {
             <div className="panel dashboard-balance">
               <div>
                 <div className="pill pill-success" style={{ width: 'fit-content', marginBottom: 18 }}>Live Balance</div>
-                <h2 style={{ fontSize: 22, marginBottom: 18 }}>Total Balance</h2>
+                <h2 className="fs-dash-h2" style={{ fontSize: 22, marginBottom: 18 }}>Total Balance</h2>
                 <div className="dashboard-balance-value">{totalBalance.toFixed(2)} TRX</div>
               </div>
               <div>
                 <p className="muted" style={{ marginBottom: 10 }}>Approximate fiat value</p>
-                <strong style={{ fontSize: 24, fontFamily: 'Space Grotesk, sans-serif' }}>
+                <strong className="fs-24" style={{ fontSize: 24, fontFamily: 'Space Grotesk, sans-serif' }}>
                   ~${(totalBalance * 0.25).toFixed(2)} USD
                 </strong>
               </div>
@@ -235,7 +235,7 @@ export default function DashboardPage() {
           </section>
 
           {withdrawKeyId && (
-            <section className="panel" style={{ marginBottom: 22, padding: 24 }}>
+            <section className="panel withdraw-section" style={{ marginBottom: 22, padding: 24 }}>
               <h3 style={{ marginBottom: 16 }}>Withdraw Funds</h3>
               <div style={{ display: 'grid', gap: 16 }}>
                 <div>
@@ -287,7 +287,7 @@ export default function DashboardPage() {
             <div className="panel dashboard-panel">
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', marginBottom: 8 }}>
                 <div>
-                  <h2 style={{ fontSize: 28, marginBottom: 6 }}>Payment Links</h2>
+                  <h2 className="fs-dash-h2" style={{ fontSize: 28, marginBottom: 6 }}>Payment Links</h2>
                   <p className="muted">Generate, copy, and share links to receive crypto.</p>
                 </div>
                 <span className="pill pill-danger">{links.length} active</span>
@@ -295,7 +295,7 @@ export default function DashboardPage() {
 
               {links.length === 0 ? (
                 <div className="empty-state" style={{ marginTop: 20 }}>
-                  <h3 style={{ fontSize: 22, marginBottom: 8 }}>No payment links yet</h3>
+                  <h3 className="fs-empty-h3" style={{ fontSize: 22, marginBottom: 8 }}>No payment links yet</h3>
                   <p className="muted">Create your first route to start collecting private payments.</p>
                 </div>
               ) : (
@@ -343,13 +343,13 @@ export default function DashboardPage() {
 
             <div className="panel dashboard-panel">
               <div style={{ marginBottom: 8 }}>
-                <h2 style={{ fontSize: 28, marginBottom: 6 }}>Stealth Addresses</h2>
+                <h2 className="fs-dash-h2" style={{ fontSize: 28, marginBottom: 6 }}>Stealth Addresses</h2>
                 <p className="muted">Your private receive addresses with funds.</p>
               </div>
 
               {keys.length === 0 ? (
                 <div className="empty-state" style={{ marginTop: 20 }}>
-                  <h3 style={{ fontSize: 22, marginBottom: 8 }}>No addresses yet</h3>
+                  <h3 className="fs-empty-h3" style={{ fontSize: 22, marginBottom: 8 }}>No addresses yet</h3>
                   <p className="muted">A stealth address will appear once someone sends funds to your link.</p>
                 </div>
               ) : (

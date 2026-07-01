@@ -188,7 +188,7 @@ export default function PayPage() {
               <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
             </svg>
           </div>
-          <h1 style={{ fontSize: 24, marginBottom: 8 }}>Payment Sent!</h1>
+          <h1 className="fs-pay-h1" style={{ fontSize: 24, marginBottom: 8 }}>Payment Sent!</h1>
           <p style={{ color: 'var(--color-text-secondary)', marginBottom: 16 }}>
             {amount} TRX sent successfully
           </p>
@@ -211,7 +211,7 @@ export default function PayPage() {
   return (
     <main className="bg-pattern pay-shell">
       <div className="glass-card pay-card">
-        <h1 style={{ fontSize: 24, marginBottom: 8, textAlign: 'center' }}>Send Payment</h1>
+        <h1 className="fs-pay-h1" style={{ fontSize: 24, marginBottom: 8, textAlign: 'center' }}>Send Payment</h1>
         <p style={{ color: 'var(--color-text-secondary)', marginBottom: 24, textAlign: 'center' }}>
           Sending crypto privately
         </p>

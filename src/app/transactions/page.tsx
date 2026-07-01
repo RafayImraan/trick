@@ -64,7 +64,7 @@ export default function TransactionsPage() {
     <>
       <Header />
       <main className="bg-pattern" style={{ minHeight: '100vh' }}>
-        <div className="container transactions-shell" style={{ paddingTop: 40 }}>
+        <div className="container transactions-shell">
           <div className="fade-in" style={{ marginBottom: 32 }}>
             <div className="pill pill-danger" style={{ marginBottom: 14, width: 'fit-content' }}>
               History
@@ -73,10 +73,10 @@ export default function TransactionsPage() {
             <p className="muted">All incoming payments to your stealth addresses.</p>
           </div>
 
-          <section className="panel slide-up" style={{ padding: 24 }}>
+          <section className="panel slide-up tx-section" style={{ padding: 24 }}>
             {transactions.length === 0 ? (
               <div className="empty-state">
-                <h3 style={{ fontSize: 22, marginBottom: 8 }}>No transactions yet</h3>
+                <h3 className="fs-empty-h3" style={{ fontSize: 22, marginBottom: 8 }}>No transactions yet</h3>
                 <p className="muted">Share a payment link to start receiving crypto.</p>
               </div>
             ) : (
