@@ -47,12 +47,6 @@ export default function DashboardPage() {
     }
   }, [sessionStatus, router]);
 
-  useEffect(() => {
-    if (session?.user?.id) {
-      fetchData();
-    }
-  }, [session]);
-
   const fetchData = async () => {
     try {
       const [keysRes, linksRes, balanceRes] = await Promise.all([
@@ -71,6 +65,12 @@ export default function DashboardPage() {
       setLinks([]);
     }
   };
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchData();
+  }, [session]);
 
   const syncBalances = async () => {
     setSyncing(true);
@@ -152,7 +152,7 @@ export default function DashboardPage() {
       setWithdrawAddress('');
       setWithdrawKeyId(null);
       fetchData();
-    } catch (error) {
+    } catch {
       setWithdrawError('Withdrawal failed');
       setWithdrawStatus('error');
     }
@@ -173,7 +173,6 @@ export default function DashboardPage() {
 
   const totalBalance = keys.reduce((acc, k) => acc + parseFloat(k.balance || '0'), 0);
   const totalClicks = links.reduce((acc, link) => acc + link.clickCount, 0);
-  const keysWithFunds = keys.filter(k => parseFloat(k.balance || '0') > 0);
 
   return (
     <>

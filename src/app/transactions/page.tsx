@@ -26,12 +26,6 @@ export default function TransactionsPage() {
     }
   }, [sessionStatus, router]);
 
-  useEffect(() => {
-    if (session?.user?.id) {
-      fetchTransactions();
-    }
-  }, [session]);
-
   const fetchTransactions = async () => {
     try {
       const res = await fetch('/api/transactions');
@@ -42,6 +36,12 @@ export default function TransactionsPage() {
       setTransactions([]);
     }
   };
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchTransactions();
+  }, [session]);
 
   const formatAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 

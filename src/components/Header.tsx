@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { signOut, useSession } from 'next-auth/react';
 import { useState } from 'react';
 
@@ -43,13 +44,12 @@ export function Header() {
                 Sign Out
               </button>
               {session?.user?.image ? (
-                <img
+                <Image
                   src={session.user.image}
                   alt=""
-                  className="header-avatar"
+                  width={38}
+                  height={38}
                   style={{
-                    width: 38,
-                    height: 38,
                     borderRadius: '50%',
                     border: '2px solid rgba(255,255,255,0.95)',
                     boxShadow: '0 10px 20px rgba(22, 21, 28, 0.1)',

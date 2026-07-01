@@ -5,27 +5,15 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { deriveSenderStealthAddress } from '@/lib/stealth';
 
-type TronWeb = {
+interface TronWebExt {
   ready?: boolean;
-  defaultAddress?: { base58: string } | undefined;
+  defaultAddress?: { base58: string };
   trx?: {
     sendTransaction?: (to: string, amount: number) => Promise<{ txid: string }>;
     getBalance?: (address: string) => Promise<number>;
     request?: (options: { method: string }) => Promise<void>;
   };
   requestAccount?: () => void;
-};
-
-type TronWindow = {
-  tronWeb?: TronWeb;
-  tronLink?: {
-    request?: (options: { method: string }) => Promise<void>;
-    tronWeb?: TronWeb;
-  };
-};
-
-declare global {
-  interface Window extends TronWindow {}
 }
 
 export default function PayPage() {
@@ -43,17 +31,6 @@ export default function PayPage() {
   const linkId = params.id as string;
   const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   const urlAmount = searchParams.get('amount');
-
-  useEffect(() => {
-    checkWallet();
-    fetchReceiver();
-    if (urlAmount) {
-      const parsed = parseFloat(urlAmount);
-      if (!isNaN(parsed) && parsed > 0) {
-        setAmount(urlAmount);
-      }
-    }
-  }, []);
 
   const getErrorMessage = (err: unknown): string => {
     if (err instanceof Error) {
@@ -74,7 +51,7 @@ export default function PayPage() {
   const checkWallet = async () => {
     setStatus('connecting');
     try {
-      const tron = (window.tronWeb || window.tronLink?.tronWeb) as TronWeb | undefined;
+      const tron = (window.tronWeb || window.tronLink?.tronWeb) as TronWebExt | undefined;
       if (tron?.ready && tron.defaultAddress?.base58 && tron.trx?.getBalance) {
         setWalletConnected(true);
         const addr = tron.defaultAddress.base58;
@@ -108,6 +85,19 @@ export default function PayPage() {
     }
   };
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    checkWallet();
+    fetchReceiver();
+    if (urlAmount) {
+      const parsed = parseFloat(urlAmount);
+      if (!isNaN(parsed) && parsed > 0) {
+        setAmount(urlAmount);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const sendPayment = async () => {
     if (!amount || parseFloat(amount) <= 0) {
       setError('Please enter a valid amount');
@@ -119,7 +109,7 @@ export default function PayPage() {
       return;
     }
 
-    const tron = (window.tronWeb || window.tronLink?.tronWeb) as TronWeb | undefined;
+    const tron = (window.tronWeb || window.tronLink?.tronWeb) as TronWebExt | undefined;
     if (!tron?.ready || !tron.defaultAddress?.base58 || !tron.trx?.sendTransaction) {
       setError('Please connect TronLink wallet');
       return;
@@ -191,8 +181,8 @@ export default function PayPage() {
 
   if (status === 'success') {
     return (
-      <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-light)' }}>
-        <div className="glass-card" style={{ maxWidth: 400, width: '100%', textAlign: 'center' }}>
+      <main className="pay-shell" style={{ background: 'var(--color-bg-light)' }}>
+        <div className="glass-card pay-card" style={{ textAlign: 'center' }}>
           <div style={{ width: 64, height: 64, background: 'var(--color-success)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
             <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
               <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
@@ -219,8 +209,8 @@ export default function PayPage() {
   }
 
   return (
-    <main className="bg-pattern" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="glass-card" style={{ maxWidth: 400, width: '100%' }}>
+    <main className="bg-pattern pay-shell">
+      <div className="glass-card pay-card">
         <h1 style={{ fontSize: 24, marginBottom: 8, textAlign: 'center' }}>Send Payment</h1>
         <p style={{ color: 'var(--color-text-secondary)', marginBottom: 24, textAlign: 'center' }}>
           Sending crypto privately

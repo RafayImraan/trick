@@ -13,6 +13,8 @@
   --color-surface-tint: rgba(255, 245, 243, 0.88);
   --color-border: rgba(22, 21, 28, 0.1);
   --color-border-strong: rgba(255, 67, 54, 0.18);
+  --color-bg-light: #fff8f5;
+  --color-text-secondary: var(--color-ink-soft);
   --shadow-soft: 0 20px 60px rgba(31, 20, 18, 0.08);
   --shadow-card: 0 18px 45px rgba(255, 67, 54, 0.08);
   --hero-glow:
@@ -642,6 +644,31 @@ pre,
 .hamburger-line.open::after {
   transform: rotate(-90deg) translateY(0);
   opacity: 0;
+}
+
+.pay-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.pay-card {
+  max-width: 400px;
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  .pay-shell {
+    padding: 12px;
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+
+  .pay-card {
+    padding: 20px;
+  }
 }
 
 .fade-in {

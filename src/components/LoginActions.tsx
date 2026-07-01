@@ -6,7 +6,7 @@ import { signIn } from 'next-auth/react';
 declare global {
   interface Window {
     tronLink?: {
-      request: (options: { method: string; params?: any }) => Promise<any>;
+      request: (options: { method: string; params?: unknown }) => Promise<unknown>;
       tronWeb?: {
         defaultAddress?: {
           base58: string;
@@ -39,7 +39,7 @@ export function LoginActions({ googleEnabled, appleEnabled }: LoginActionsProps)
   const connectWallet = async () => {
     setConnecting(true);
     try {
-      const tron = (window.tronWeb || window.tronLink?.tronWeb) as any;
+      const tron = (window.tronWeb || window.tronLink?.tronWeb) as Window['tronWeb'];
 
       if (window.tronLink && window.tronLink.request) {
         await window.tronLink.request({ method: 'tron_requestAccounts' });
@@ -65,6 +65,11 @@ export function LoginActions({ googleEnabled, appleEnabled }: LoginActionsProps)
       }
 
       const messageHex = Buffer.from(`trick-auth:${nonce}`).toString('hex');
+      if (!tron?.trx) {
+        alert('Wallet signing not available.');
+        setConnecting(false);
+        return;
+      }
       const signed = await tron.trx.sign(messageHex);
       const signature = Array.isArray(signed.signature) ? signed.signature[0] : signed.signature;
 

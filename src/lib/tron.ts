@@ -1,5 +1,8 @@
 import crypto from 'crypto';
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { TronWeb } = require('tronweb');
+
 export const FULL_NODE = process.env.TRON_FULL_NODE || 'https://api.nile.org';
 export const SOLIDITY_NODE = process.env.TRON_SOLIDITY_NODE || 'https://api.nile.org';
 export const EVENT_SERVER = process.env.TRON_EVENT_SERVER || 'https://api.nile.org';
@@ -12,11 +15,9 @@ export const TRX_TOKEN = 'TRX';
 export const USDT_TOKEN = 'TR7NHqjeKQxGTCi8qZLJEoU4y3E2sQ3q6M';
 
 function createTronWebInstance(privateKey?: string) {
-  const TronWebModule = require('tronweb');
-  const TronWebClass = TronWebModule.TronWeb || TronWebModule.default || TronWebModule;
   const headers = TRON_API_KEY ? { 'TRON-PRO-API-KEY': TRON_API_KEY } : undefined;
 
-  const instance: any = new TronWebClass({
+  const instance = new TronWeb({
     fullHost: FULL_NODE,
     solidityNode: SOLIDITY_NODE,
     eventServer: EVENT_SERVER,
@@ -30,7 +31,7 @@ function createTronWebInstance(privateKey?: string) {
   return instance;
 }
 
-let tronWebInstance: any = null;
+let tronWebInstance: ReturnType<typeof createTronWebInstance> | null = null;
 
 function getTronWeb() {
   if (!tronWebInstance) {
@@ -145,19 +146,22 @@ export async function sendToken(
   }
 }
 
-export async function getTransactionInfo(txHash: string): Promise<any | null> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TronApiResponse = any;
+
+export async function getTransactionInfo(txHash: string): Promise<TronApiResponse | null> {
   try {
     const info = await tronWeb.trx.getTransactionInfo(txHash);
     return info;
-  } catch (error) {
+  } catch {
     return null;
   }
 }
 
-export async function getTransaction(txHash: string): Promise<any | null> {
+export async function getTransaction(txHash: string): Promise<TronApiResponse | null> {
   try {
     return await tronWeb.trx.getTransaction(txHash);
-  } catch (error) {
+  } catch {
     return null;
   }
 }

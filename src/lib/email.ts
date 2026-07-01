@@ -220,7 +220,6 @@ export async function sendNewPaymentLinkEmail(
   link: string,
   linkCode: string
 ): Promise<boolean> {
-  const safeLink = escapeHtml(link);
   const safeLinkCode = escapeHtml(linkCode);
   const fullLink = `https://trick.fi/pay/${safeLinkCode}`;
   const subject = 'Your new Trick payment link';

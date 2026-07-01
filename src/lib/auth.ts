@@ -5,12 +5,8 @@ import Credentials from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from './prisma';
 
-declare const tronWeb: {
-  trx: {
-    verifyMessage: (messageHex: string, signature: string, address: string) => boolean;
-  };
-};
-
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { TronWeb } = require('tronweb');
 const providers = [];
 
 if (process.env.AUTH_GOOGLE_ID) {
@@ -68,7 +64,6 @@ providers.push(
       const messageHex = Buffer.from(`trick-auth:${nonce}`).toString('hex');
 
       try {
-        const { TronWeb } = require('tronweb');
         const tronWebInstance = new TronWeb({ fullHost: 'https://api.nile.org' });
         const isValid = tronWebInstance.trx.verifyMessage(messageHex, signature, walletAddress);
 
@@ -114,19 +109,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: '/login',
   },
   callbacks: {
-    async session({ session, token }: { session: any; token: any }) {
-      if (session.user && token.id) {
-        session.user.id = token.id;
+    async session({ session, token }) {
+      if (session.user && token.sub) {
+        (session.user as unknown as Record<string, unknown>).id = token.sub;
       }
       return session;
     },
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        token.sub = user.id;
       }
       return token;
     },
-    async signIn({ user, account, profile }) {
+    async signIn() {
       return true;
     },
   },
