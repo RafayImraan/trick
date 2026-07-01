@@ -64,7 +64,7 @@ export default function TransactionsPage() {
     <>
       <Header />
       <main className="bg-pattern" style={{ minHeight: '100vh' }}>
-        <div className="container" style={{ paddingTop: 40 }}>
+        <div className="container transactions-shell" style={{ paddingTop: 40 }}>
           <div className="fade-in" style={{ marginBottom: 32 }}>
             <div className="pill pill-danger" style={{ marginBottom: 14, width: 'fit-content' }}>
               History

@@ -587,6 +587,63 @@ pre,
   border: 1px dashed rgba(255, 67, 54, 0.2);
 }
 
+.hamburger {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: rgba(22, 21, 28, 0.06);
+  border-radius: 12px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 31;
+}
+
+.hamburger-line,
+.hamburger-line::before,
+.hamburger-line::after {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--color-ink);
+  border-radius: 2px;
+  transition: transform 240ms ease, opacity 240ms ease;
+}
+
+.hamburger-line::before,
+.hamburger-line::after {
+  content: '';
+  position: absolute;
+}
+
+.hamburger-line {
+  position: relative;
+}
+
+.hamburger-line::before {
+  transform: translateY(-6px);
+}
+
+.hamburger-line::after {
+  transform: translateY(6px);
+}
+
+.hamburger-line.open {
+  transform: rotate(45deg);
+}
+
+.hamburger-line.open::before {
+  transform: rotate(90deg) translateY(0);
+  opacity: 0;
+}
+
+.hamburger-line.open::after {
+  transform: rotate(-90deg) translateY(0);
+  opacity: 0;
+}
+
 .fade-in {
   animation: fadeIn 360ms ease-out;
 }
@@ -653,6 +710,58 @@ pre,
     display: none;
   }
 
+  .hamburger {
+    display: flex;
+  }
+
+  .header-nav--open {
+    position: fixed;
+    inset: 72px 0 0 0;
+    z-index: 30;
+    flex-direction: column;
+    background: rgba(255, 253, 250, 0.98);
+    backdrop-filter: blur(18px);
+    padding: 24px 28px;
+    gap: 8px;
+    border-bottom: 1px solid var(--color-border);
+    overflow-y: auto;
+  }
+
+  .header-nav--open .header-link,
+  .header-nav--open .btn-primary,
+  .header-nav--open .header-avatar,
+  .header-nav--open > div {
+    display: flex;
+  }
+
+  .header-nav--open .header-link {
+    padding: 14px 0;
+    font-size: 17px;
+    border-bottom: 1px solid rgba(22, 21, 28, 0.05);
+  }
+
+  .header-nav--open > div {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .header-nav--open .btn-primary {
+    width: 100%;
+    justify-content: center;
+    margin-top: 8px;
+  }
+
+  .header-nav--open .header-avatar {
+    margin-top: 12px;
+    align-self: center;
+  }
+
+  .hero-card-grid-mobile {
+    grid-template-columns: 1fr;
+  }
+
   .hero-meta {
     grid-template-columns: 1fr;
   }
@@ -660,6 +769,10 @@ pre,
   .dashboard-top {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .dashboard-top > div:last-child {
+    flex-direction: column;
   }
 
   .dashboard-balance,
@@ -685,5 +798,141 @@ pre,
   .list-item {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .list-item > div:last-child {
+    text-align: left;
+    width: 100%;
+  }
+
+  .link-actions {
+    flex-wrap: wrap;
+  }
+
+  .login-card {
+    max-width: none;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    width: min(100% - 20px, 1200px);
+  }
+
+  .section {
+    padding: 48px 0;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(2.2rem, 10vw, 3.1rem);
+  }
+
+  .hero-card {
+    padding: 18px;
+  }
+
+  .hero-spotlight {
+    padding: 18px;
+  }
+
+  .hero-spotlight h3 {
+    font-size: 24px;
+  }
+
+  .stack-card {
+    padding: 16px;
+  }
+
+  .section-heading h2 {
+    font-size: clamp(1.6rem, 6vw, 2rem);
+  }
+
+  .dashboard-balance,
+  .dashboard-panel,
+  .feature-card,
+  .step-card,
+  .login-card,
+  .glass-card {
+    padding: 18px;
+  }
+
+  .dashboard-balance-value {
+    font-size: clamp(2rem, 8vw, 2.8rem);
+  }
+
+  .dashboard-top h1 {
+    font-size: clamp(1.6rem, 6vw, 2.2rem);
+  }
+
+  .stat-tile strong {
+    font-size: 1.6rem;
+  }
+
+  .link-item {
+    padding: 14px;
+  }
+
+  .link-actions {
+    gap: 6px;
+  }
+
+  .link-actions .btn-sm {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .login-shell {
+    padding: 32px 0;
+    gap: 24px;
+  }
+
+  .login-copy h1 {
+    font-size: clamp(1.8rem, 7vw, 2.6rem);
+  }
+
+  .footer-shell .panel {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .dashboard-shell {
+    padding: 24px 0 32px;
+  }
+
+  .transactions-shell {
+    padding-top: 24px;
+  }
+
+  .withdraw-form-actions {
+    flex-direction: column;
+  }
+
+  .hero-card-grid-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-card-grid-inner .stack-card {
+    padding: 14px;
+  }
+
+  .eyebrow {
+    font-size: 0.85rem;
+    padding: 6px 12px;
+  }
+
+  .metric-card {
+    padding: 14px;
+  }
+
+  .metric-card strong {
+    font-size: 1.05rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .hamburger {
+    display: none;
   }
 }

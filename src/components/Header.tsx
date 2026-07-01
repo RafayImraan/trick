@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
+import { useState } from 'react';
 
 export function Header() {
   const { data: session, status } = useSession();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className="header">
@@ -20,13 +22,21 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="header-nav">
+        <button
+          className="hamburger"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle navigation menu"
+        >
+          <span className={`hamburger-line ${menuOpen ? 'open' : ''}`} />
+        </button>
+
+        <nav className={`header-nav ${menuOpen ? 'header-nav--open' : ''}`}>
           {status === 'authenticated' ? (
             <>
-              <Link href="/dashboard" className="header-link">Dashboard</Link>
-              <Link href="/transactions" className="header-link">Transactions</Link>
+              <Link href="/dashboard" className="header-link" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+              <Link href="/transactions" className="header-link" onClick={() => setMenuOpen(false)}>Transactions</Link>
               <button
-                onClick={() => signOut()}
+                onClick={() => { signOut(); setMenuOpen(false); }}
                 className="header-link"
                 style={{ background: 'none', border: 'none', cursor: 'pointer' }}
               >
@@ -36,6 +46,7 @@ export function Header() {
                 <img
                   src={session.user.image}
                   alt=""
+                  className="header-avatar"
                   style={{
                     width: 38,
                     height: 38,
@@ -46,6 +57,7 @@ export function Header() {
                 />
               ) : (
                 <div
+                  className="header-avatar"
                   style={{
                     width: 38,
                     height: 38,
@@ -65,8 +77,8 @@ export function Header() {
             </>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Link href="/#features" className="header-link">Features</Link>
-              <Link href="/login" className="btn-primary">Sign In</Link>
+              <Link href="/#features" className="header-link" onClick={() => setMenuOpen(false)}>Features</Link>
+              <Link href="/login" className="btn-primary" onClick={() => setMenuOpen(false)}>Sign In</Link>
             </div>
           )}
         </nav>

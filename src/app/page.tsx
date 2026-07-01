@@ -84,7 +84,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="hero-card-grid-inner" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                     <div className="stack-card">
                       <div className="pill pill-danger" style={{ marginBottom: 12, width: 'fit-content' }}>01</div>
                       <h3 style={{ fontSize: 19, marginBottom: 8 }}>Generate link</h3>

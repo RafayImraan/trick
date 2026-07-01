@@ -261,7 +261,7 @@ export default function DashboardPage() {
                     className="input-field"
                   />
                 </div>
-                <div style={{ display: 'flex', gap: 12 }}>
+                <div className="withdraw-form-actions" style={{ display: 'flex', gap: 12 }}>
                   <button
                     onClick={handleWithdraw}
                     disabled={withdrawStatus === 'withdrawing' || !withdrawAmount || !withdrawAddress}
